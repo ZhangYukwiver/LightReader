@@ -1,0 +1,2416 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>轻阅</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --native-top-inset: 0px;
+      --native-bottom-inset: 0px;
+      --native-ime-inset: 0px;
+      --paper: #f7f5ef;
+      --card: #fffef9;
+      --ink: #24231f;
+      --muted: #77736a;
+      --line: #ddd8cc;
+      --accent: #2f6958;
+      --accent-soft: #dbece5;
+      --note: #ffe7a3;
+      --search: #81d4fa;
+      --font-size: 19px;
+      --line-height: 1.85;
+      --paragraph-spacing: .85em;
+      --doc-zoom: 1;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --paper: #171916;
+      --card: #20231f;
+      --ink: #ecebe4;
+      --muted: #aaa99f;
+      --line: #393c36;
+      --accent: #8fc9b6;
+      --accent-soft: #29473e;
+      --note: #785f22;
+      --search: #176f8f;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      padding-top: var(--native-top-inset);
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, "Noto Sans SC", sans-serif;
+    }
+    button, input, textarea { font: inherit; }
+    button { min-height: 44px; border: 0; color: inherit; background: transparent; }
+    header {
+      grid-row: 1;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) repeat(6, auto);
+      align-items: center;
+      gap: 4px;
+      min-height: 60px;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--paper) 92%, transparent);
+    }
+    header button { padding: 0 10px; color: var(--accent); font-weight: 700; }
+    header button[aria-pressed="true"] { border-radius: 10px; background: var(--accent-soft); }
+    .title { min-width: 0; padding: 0 8px; }
+    .title strong, .title small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .title strong { font-size: 16px; }
+    .title small { margin-top: 2px; color: var(--muted); font-size: 12px; }
+    #searchBar {
+      grid-row: 2;
+      display: grid;
+      grid-template-columns: 1fr auto auto auto auto;
+      align-items: center;
+      gap: 2px;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--card);
+    }
+    #searchBar[hidden] { display: none; }
+    #searchInput {
+      width: 100%; min-height: 40px; padding: 8px 12px;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: var(--paper); color: var(--ink); outline: none;
+    }
+    #searchInput:focus { border-color: var(--accent); }
+    #searchCount { min-width: 48px; color: var(--muted); text-align: center; font-size: 13px; }
+    #reader { grid-row: 3; min-height: 0; overflow: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
+    body.ai-open #reader { scroll-padding-bottom: 50vh; }
+    #document {
+      min-height: 100%; max-width: 760px; margin: 0 auto;
+      padding: 34px 24px 120px;
+      white-space: pre-wrap; overflow-wrap: anywhere;
+      font-family: ui-serif, "Noto Serif SC", "Songti SC", serif;
+      font-size: var(--font-size); line-height: var(--line-height);
+      user-select: text; -webkit-user-select: text;
+    }
+    #document.txt { white-space: normal; }
+    #document.txt .txt-chapter {
+      margin: 0; content-visibility: auto; contain-intrinsic-size: 900px;
+    }
+    #document.txt .txt-chapter + .txt-chapter { margin-top: var(--paragraph-spacing); }
+    #document.txt .txt-chapter-heading {
+      margin: 0 0 .6em; color: var(--ink); font-size: 1.3em; line-height: 1.45;
+      font-weight: 750; white-space: pre-wrap; overflow-wrap: anywhere;
+    }
+    #document.txt .txt-chapter-body {
+      margin-top: var(--paragraph-spacing); white-space: pre-wrap; overflow-wrap: anywhere; text-align: left;
+    }
+    #document.txt .txt-preamble { margin-bottom: var(--paragraph-spacing); }
+    #document.docx {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Noto Sans SC", sans-serif;
+      line-height: var(--line-height); zoom: var(--doc-zoom); touch-action: pan-y;
+    }
+    #document.docx .docx-p { min-height: 1em; }
+    #document.docx .docx-list { position: relative; padding-left: 1.35em; }
+    #document.docx .docx-list::before { content: "•"; position: absolute; left: .35em; color: var(--accent); }
+    #document.docx .docx-table { width: 100%; margin: 12px 0; border-collapse: collapse; table-layout: fixed; white-space: pre-wrap; }
+    #document.docx .docx-table td { padding: 7px 8px; border: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+    #document.docx .docx-page-break { display: block; height: 24px; margin: 18px 0; border-top: 1px dashed var(--line); }
+    #document.home {
+      padding: 24px 16px 120px; white-space: normal;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Noto Sans SC", sans-serif;
+      font-size: 16px; line-height: 1.45;
+    }
+    .home-view { max-width: 760px; margin: 0 auto; }
+    .home-view h1 { margin: 0 0 14px; font-size: 20px; }
+    .home-empty { display: grid; place-content: center; min-height: 42vh; gap: 14px; color: var(--muted); text-align: center; }
+    .home-empty button { justify-self: center; padding: 0 18px; border-radius: 11px; background: var(--accent); color: var(--paper); }
+    .recent-list { display: grid; gap: 8px; }
+    .recent-item {
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px;
+      width: 100%; min-height: 68px; padding: 10px 12px;
+      border: 1px solid var(--line); border-radius: 13px; background: var(--card); text-align: left;
+      touch-action: manipulation; -webkit-touch-callout: none;
+    }
+    .recent-item:active { background: var(--accent-soft); }
+    .recent-item.pinned { border-color: var(--accent); }
+    .recent-item.long-pressed { background: var(--accent-soft); }
+    .recent-format {
+      display: grid; place-items: center; width: 42px; height: 42px;
+      border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 800;
+    }
+    .recent-details { min-width: 0; }
+    .recent-name { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+    .recent-meta { display: block; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .recent-time { align-self: start; color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .recent-actions { display: grid; gap: 8px; margin-top: 8px; }
+    .recent-actions button {
+      min-height: 46px; padding: 0 14px; border: 1px solid var(--line); border-radius: 11px;
+      background: var(--paper); text-align: left;
+    }
+    .recent-actions button:active { background: var(--accent-soft); }
+    .recent-actions .danger { color: #a04437; }
+    #document.loading { white-space: normal; }
+    .loading-view { display: grid; gap: 12px; place-content: center; min-height: 42vh; color: var(--muted); text-align: center; }
+    .loading-view strong { color: var(--ink); font-size: 18px; }
+    .loading-track { width: min(280px, 72vw); height: 6px; overflow: hidden; border-radius: 99px; background: var(--line); }
+    .loading-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--accent); transition: width .12s ease; }
+    mark.annotation { padding: 1px 0; border-bottom: 2px solid #d1a021; background: var(--note); color: inherit; cursor: pointer; }
+    mark.annotation.editing { cursor: text; }
+    .search-hit { border-radius: 2px; background: var(--search); }
+    .search-hit.active { outline: 2px solid var(--accent); outline-offset: 2px; }
+    footer {
+      grid-row: 4;
+      display: grid; grid-template-columns: 1fr 1fr 1.2fr;
+      gap: 8px; padding: 8px 12px calc(8px + max(var(--native-bottom-inset), env(safe-area-inset-bottom)));
+      border-top: 1px solid var(--line); background: var(--card);
+    }
+    footer button { border-radius: 12px; font-size: 14px; font-weight: 650; }
+    footer .primary { background: var(--accent); color: var(--paper); }
+    footer button:disabled { opacity: .42; }
+    #selectionBar {
+      position: fixed; left: 0; top: 0; z-index: 20;
+      transform: translate(-50%, -100%);
+      padding: 6px; border: 1px solid var(--line); border-radius: 14px;
+      background: var(--ink); color: var(--paper); box-shadow: 0 8px 30px #0004;
+    }
+    #selectionBar[hidden] { display: none; }
+    #selectionBar[data-placement="below"] { transform: translate(-50%, 0); }
+    #selectionBar { display: flex; max-width: calc(100vw - 20px); overflow-x: auto; }
+    #selectionBar button { min-width: 64px; padding: 0 9px; font-weight: 700; }
+    .sheet-backdrop {
+      position: fixed; inset: 0; z-index: 30; display: grid; align-items: end;
+      padding-bottom: var(--native-ime-inset);
+      background: #0007;
+    }
+    .sheet-backdrop[hidden] { display: none; }
+    .sheet {
+      max-height: 78vh; overflow: auto; padding: 18px 18px calc(20px + env(safe-area-inset-bottom));
+      border-radius: 22px 22px 0 0; background: var(--card); box-shadow: 0 -10px 40px #0003;
+    }
+    .sheet h2 { margin: 0 0 14px; font-size: 19px; }
+    .sheet textarea {
+      width: 100%; min-height: 110px; resize: vertical; padding: 12px;
+      border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink);
+    }
+    .sheet-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+    .sheet-actions button { padding: 0 18px; border-radius: 11px; }
+    .sheet-actions .save { background: var(--accent); color: var(--paper); }
+    .global-note-option {
+      display: flex; align-items: center; gap: 7px; min-height: 44px; margin-right: auto;
+      color: var(--muted); font-size: 13px; cursor: pointer; user-select: none;
+    }
+    .global-note-option input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+    .global-note-option input:disabled { opacity: .6; }
+    .note-item { padding: 14px 0; border-top: 1px solid var(--line); }
+    .note-item:first-child { border-top: 0; }
+    .note-item blockquote { margin: 0 0 7px; color: var(--muted); font-size: 13px; }
+    .note-item p { margin: 0 0 10px; }
+    .note-item .row { display: flex; gap: 6px; }
+    .note-item button { min-height: 36px; padding: 0 12px; border-radius: 9px; background: var(--paper); color: var(--accent); }
+    .setting { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 12px; min-height: 56px; border-top: 1px solid var(--line); }
+    .setting:first-of-type { border-top: 0; }
+    .setting input { width: 100%; accent-color: var(--accent); }
+    .setting output { min-width: 46px; color: var(--muted); font-size: 12px; text-align: right; }
+    .setting-control { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; }
+    .form-row { display: grid; gap: 6px; margin: 10px 0; }
+    .form-row label { color: var(--muted); font-size: 13px; }
+    .form-row input, .form-row select {
+      width: 100%; min-height: 42px; padding: 8px 10px;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: var(--paper); color: var(--ink); outline: none;
+    }
+    .form-row input:focus, .form-row select:focus { border-color: var(--accent); }
+    .hint { margin: 8px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .channel-list { display: grid; gap: 6px; margin: 8px 0 14px; }
+    .channel-item {
+      display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
+      min-height: 46px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px;
+      text-align: left;
+    }
+    .channel-item.active { border-color: var(--accent); background: var(--accent-soft); }
+    .channel-item small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .channel-item .key-state { color: var(--accent); font-size: 12px; }
+    .check-row { display: flex; align-items: center; gap: 8px; min-height: 42px; color: var(--muted); font-size: 13px; }
+    .check-row input { accent-color: var(--accent); }
+    .ai-dock {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+      height: 50vh; min-height: 260px; padding-top: 8px;
+      border-top: 1px solid var(--line); background: var(--paper);
+      box-shadow: 0 -10px 34px #0004;
+    }
+    .ai-dock[hidden] { display: none; }
+    .ai-dock .sheet { width: 100%; height: 100%; max-height: none; border-radius: 18px 18px 0 0; }
+    .ai-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .ai-head h2 { margin-bottom: 0; }
+    .ai-head button { min-height: 34px; padding: 0 10px; border-radius: 8px; background: var(--paper); color: var(--accent); font-size: 12px; }
+    .ai-context { margin: 0 0 10px; padding: 9px 11px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); font-size: 13px; white-space: pre-wrap; }
+    .ai-messages { min-height: 64px; max-height: calc(50vh - 245px); overflow: auto; padding: 2px 0; }
+    .ai-message { margin: 8px 0; padding: 10px 12px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
+    .ai-message.user { margin-left: 16%; background: var(--accent-soft); }
+    .ai-message.assistant { margin-right: 8%; background: var(--paper); border: 1px solid var(--line); }
+    .ai-message.pending { color: var(--muted); }
+    .ai-citations { display: grid; gap: 4px; margin-top: 8px; }
+    .ai-citations button { min-height: 32px; padding: 0 8px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); text-align: left; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ai-message-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .ai-message-actions button { min-height: 34px; padding: 0 10px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-size: 12px; }
+    #aiPrompt { min-height: 76px; }
+    .ai-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+    .ai-toolbar .check-row { flex: 1; }
+    .ai-toolbar select { min-height: 36px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
+    .ai-channel-select { max-width: 44%; }
+    .ai-page[hidden] { display: none; }
+    .ai-page-panel {
+      display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
+      padding: 0; overflow: hidden;
+    }
+    .ai-page-head {
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
+      min-height: 60px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--card);
+    }
+    .ai-page-head h2 { margin: 0; font-size: 18px; text-align: center; }
+    .ai-page-head button { min-height: 42px; padding: 0 8px; color: var(--accent); font-size: 14px; font-weight: 700; }
+    .ai-page-head button:last-child { justify-self: end; }
+    .ai-page-status { min-height: 38px; padding: 7px 18px 0; border-bottom: 1px solid var(--line); background: var(--paper); }
+    .ai-page-status .hint { max-width: 760px; margin: 0 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ai-page-messages { min-height: 0; overflow: auto; padding: 16px 18px 22px; overscroll-behavior: contain; }
+    .ai-page-messages > .hint { max-width: 760px; margin: 28px auto; text-align: center; }
+    .ai-page-messages .ai-message { max-width: 760px; margin-right: auto; margin-left: auto; }
+    .ai-page-messages .ai-message.user { margin-left: max(16%, calc((100% - 760px) / 2 + 48px)); }
+    .ai-page-composer { padding: 10px 18px calc(12px + max(var(--native-ime-inset), env(safe-area-inset-bottom))); border-top: 1px solid var(--line); background: var(--card); }
+    .ai-page-composer-inner { width: min(760px, 100%); margin: 0 auto; }
+    .ai-page-composer .form-row { margin: 0; }
+    .ai-page-composer textarea { width: 100%; resize: vertical; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); outline: none; }
+    .ai-page-composer textarea:focus { border-color: var(--accent); }
+    #aiPagePrompt { min-height: 82px; }
+    .ai-page-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+    .ai-page-toolbar .check-row { flex: 1; }
+    .ai-page-toolbar select { min-height: 36px; max-width: 44%; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
+    .ai-page-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+    .ai-page-actions button { min-height: 42px; padding: 0 18px; border-radius: 11px; }
+    .ai-page-actions .save { background: var(--accent); color: var(--paper); }
+    .danger { color: #a04437 !important; }
+    .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .segmented button { border: 1px solid var(--line); border-radius: 10px; }
+    .segmented button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+    #tocSheet .sheet { max-height: 82vh; }
+    .toc-list { display: grid; gap: 2px; }
+    .toc-item {
+      min-height: 42px; padding: 7px 10px; border-radius: 9px; color: var(--ink);
+      text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .toc-item:active { background: var(--accent-soft); }
+    #footerZoom {
+      display: flex; align-items: center; gap: 2px; padding: 2px;
+      border: 1px solid var(--line); border-radius: 12px; background: var(--paper);
+    }
+    #footerZoom[hidden] { display: none; }
+    #footerZoom button { flex: 1; min-width: 0; min-height: 40px; padding: 0 4px; border-radius: 10px; color: var(--accent); font-weight: 750; }
+    #footerZoom button:active { background: var(--accent-soft); }
+    #toast {
+      position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 50;
+      max-width: 82vw; padding: 10px 14px; transform: translate(-50%, 12px);
+      border-radius: 10px; background: var(--ink); color: var(--paper); opacity: 0; pointer-events: none;
+      transition: .18s ease;
+    }
+    #toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (min-width: 700px) {
+      #document { padding-inline: 54px; }
+      .sheet { width: min(600px, 100%); margin: 0 auto; border-radius: 22px 22px 0 0; }
+    }
+    @media (max-width: 520px) {
+      header { gap: 0; padding-inline: 5px; }
+      header button { padding-inline: 6px; font-size: 13px; }
+      .title { padding-inline: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button id="homeButton" type="button" aria-label="导入文件" onclick="openTextFile()">导入</button>
+    <div class="title"><strong id="fileName">轻阅</strong><small id="status">最近打开的文件</small></div>
+    <button id="searchButton" type="button" aria-label="文档内搜索" onclick="toggleSearch(true)">搜索</button>
+    <button id="tocButton" type="button" aria-label="打开目录" hidden onclick="openToc()">目录</button>
+    <button id="aiToggle" type="button" aria-label="打开 AI 页面" aria-pressed="false" onclick="toggleAiPage()">AI</button>
+    <button id="undoButton" type="button" aria-label="撤销修改" hidden onpointerdown="event.preventDefault()" onclick="document.execCommand('undo')">撤销</button>
+    <button id="redoButton" type="button" aria-label="恢复修改" hidden onpointerdown="event.preventDefault()" onclick="document.execCommand('redo')">重做</button>
+    <button id="displayButton" type="button" aria-label="显示设置" onclick="onDisplayButton()">显示</button>
+  </header>
+
+  <div id="searchBar" hidden>
+    <input id="searchInput" type="search" placeholder="搜索当前文档" autocomplete="off" enterkeyhint="search">
+    <span id="searchCount">0/0</span>
+    <button type="button" aria-label="上一个结果" onclick="moveSearch(-1)">↑</button>
+    <button type="button" aria-label="下一个结果" onclick="moveSearch(1)">↓</button>
+    <button type="button" aria-label="关闭搜索" onclick="toggleSearch(false)">关闭</button>
+  </div>
+
+  <main id="reader">
+    <article id="document" class="home" aria-label="最近打开的文件">
+      <div class="home-view"><div class="home-empty"><span>暂无最近打开的文件</span><button type="button" onclick="openTextFile()">导入 TXT / DOCX</button></div></div>
+    </article>
+  </main>
+
+  <footer>
+    <button id="notesButton" type="button" onclick="showNotes()" disabled>批注 0</button>
+    <button id="settingsButton" type="button" onclick="openSheet('settingsSheet')">阅读设置</button>
+    <div id="footerZoom" hidden role="group" aria-label="Word 缩放">
+      <button type="button" aria-label="缩小" onclick="adjustDocZoom(-0.1)">−</button>
+      <button id="docxZoomReset" type="button" aria-label="还原 Word 缩放，长按打开主题设置">100%</button>
+      <button type="button" aria-label="放大" onclick="adjustDocZoom(0.1)">＋</button>
+    </div>
+    <button id="exportButton" class="primary" type="button" onclick="exportDocument()" disabled>导出原格式</button>
+  </footer>
+
+  <div id="selectionBar" hidden>
+    <button type="button" onpointerdown="event.preventDefault()" onclick="copySelection()">复制</button>
+    <button id="selectionNoteButton" type="button" onpointerdown="event.preventDefault()" onclick="newNote()">批注</button>
+    <button type="button" onpointerdown="event.preventDefault()" onclick="askSelection('explain')">讲解</button>
+    <button type="button" onpointerdown="event.preventDefault()" onclick="askSelection('translate')">翻译</button>
+  </div>
+
+  <div id="noteEditor" class="sheet-backdrop" hidden onclick="backdropClose(event)">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="noteTitle">
+      <h2 id="noteTitle">添加批注</h2>
+      <textarea id="noteText" maxlength="2000" placeholder="写下你的想法…"></textarea>
+      <div class="sheet-actions">
+        <label class="global-note-option" title="大小写完全一致；英文或数字片段需与更长词分开，忽略字体和样式">
+          <input id="globalNote" type="checkbox" aria-label="全局批注">
+          <span>全局批注</span>
+        </label>
+        <button id="deleteNoteButton" class="danger" type="button" hidden onclick="deleteEditingNote()">删除</button>
+        <button type="button" onclick="closeSheet('noteEditor')">取消</button>
+        <button class="save" type="button" onclick="saveNote()">保存</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="notesSheet" class="sheet-backdrop" hidden onclick="backdropClose(event)">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="notesTitle">
+      <h2 id="notesTitle">全部批注</h2>
+      <div id="notesList"></div>
+      <div class="sheet-actions"><button type="button" onclick="closeSheet('notesSheet')">完成</button></div>
+    </section>
+  </div>
+
+  <div id="settingsSheet" class="sheet-backdrop" hidden onclick="backdropClose(event)">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <h2 id="settingsTitle">阅读设置</h2>
+      <label class="setting"><span>字号</span><span class="setting-control"><input id="fontSize" type="range" min="15" max="30" step="1" oninput="applySettings()"><output id="fontSizeValue">19px</output></span></label>
+      <label class="setting"><span>行距</span><span class="setting-control"><input id="lineHeight" type="range" min="1.35" max="2.4" step="0.05" oninput="applySettings()"><output id="lineHeightValue">1.85</output></span></label>
+      <label class="setting"><span>段落间距</span><span class="setting-control"><input id="paragraphSpacing" type="range" min="0" max="2" step="0.05" oninput="applySettings()"><output id="paragraphSpacingValue">0.85em</output></span></label>
+      <div class="setting"><span>主题</span><div class="segmented"><button id="lightTheme" type="button" onclick="setTheme('light')">浅色</button><button id="darkTheme" type="button" onclick="setTheme('dark')">深色</button></div></div>
+      <div class="sheet-actions"><button type="button" onclick="resetSettings()">恢复默认</button><button type="button" onclick="closeSheet('settingsSheet')">完成</button></div>
+    </section>
+  </div>
+
+  <div id="docxThemeSheet" class="sheet-backdrop" hidden onclick="backdropClose(event)">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="docxThemeTitle">
+      <h2 id="docxThemeTitle">主题</h2>
+      <div class="setting"><span>主题</span><div class="segmented"><button id="docxLightTheme" type="button" onclick="setTheme('light')">浅色</button><button id="docxDarkTheme" type="button" onclick="setTheme('dark')">深色</button></div></div>
+      <div class="sheet-actions"><button type="button" onclick="closeSheet('docxThemeSheet')">完成</button></div>
+    </section>
+  </div>
+
+  <div id="tocSheet" class="sheet-backdrop" hidden onclick="backdropClose(event)">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="tocTitle">
+      <h2 id="tocTitle">目录</h2>
+      <div id="tocList" class="toc-list"></div>
+      <div class="sheet-actions"><button type="button" onclick="closeSheet('tocSheet')">完成</button></div>
+    </section>
+  </div>
+
+  <div id="recentActionsSheet" class="sheet-backdrop" hidden onclick="backdropClose(event)">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="recentActionsTitle">
+      <h2 id="recentActionsTitle">项目操作</h2>
+      <p id="recentActionsHint" class="hint"></p>
+      <div class="recent-actions">
+        <button id="recentPinButton" type="button" onclick="toggleRecentPinned()">置顶项目</button>
+        <button class="danger" type="button" onclick="deleteSelectedRecent()">删除项目</button>
+      </div>
+      <div class="sheet-actions"><button type="button" onclick="closeRecentActions()">取消</button></div>
+    </section>
+  </div>
+
+  <div id="aiPage" class="ai-dock ai-page" hidden>
+    <section class="sheet ai-page-panel" role="dialog" aria-modal="false" aria-labelledby="aiPageTitle">
+      <div class="ai-page-head">
+        <button type="button" aria-label="返回阅读" onclick="closeAiPage()">返回</button>
+        <h2 id="aiPageTitle">AI 对话</h2>
+        <button type="button" aria-label="打开 AI 渠道设置" onclick="openAiSettings()">设置</button>
+      </div>
+      <div class="ai-page-status"><p id="aiPageChannelStatus" class="hint">正在读取 AI 渠道…</p></div>
+      <div id="aiPageMessages" class="ai-page-messages" role="log" aria-live="polite">
+        <p class="hint">直接输入问题，开始与 AI 对话。</p>
+      </div>
+      <div class="ai-page-composer">
+        <div class="ai-page-composer-inner">
+          <div class="form-row"><label for="aiPagePrompt">问题</label><textarea id="aiPagePrompt" maxlength="12000" placeholder="向 AI 提问…"></textarea></div>
+          <div class="ai-page-toolbar">
+            <select id="aiPageChannelSelect" class="ai-channel-select" aria-label="AI 渠道" onchange="selectAiChannel(this.value)"><option value="">未配置渠道</option></select>
+            <label class="check-row"><input id="aiPageWebSearch" type="checkbox">联网搜索（当前渠道支持时）</label>
+          </div>
+          <div class="ai-page-actions"><button class="save" type="button" onclick="sendAiPage()">发送</button></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="aiSheet" class="ai-dock" hidden>
+    <section class="sheet ai-sheet" role="dialog" aria-modal="false" aria-labelledby="aiTitle">
+      <div class="ai-head"><h2 id="aiTitle">AI 助手</h2><button type="button" onclick="closeAiChat()">收起</button></div>
+      <p id="aiChannelStatus" class="hint">正在读取 AI 渠道…</p>
+      <div id="aiContext" class="ai-context" hidden></div>
+      <div id="aiMessages" class="ai-messages"><p class="hint">可以直接提问，也可以先选中文字再点击“讲解”或“翻译”。</p></div>
+      <div class="form-row"><label for="aiPrompt">问题</label><textarea id="aiPrompt" maxlength="12000" placeholder="和文档内容对话…"></textarea></div>
+      <div class="ai-toolbar">
+        <select id="aiChannelSelect" class="ai-channel-select" aria-label="AI 渠道" onchange="selectAiChannel(this.value)"><option value="">未配置渠道</option></select>
+        <label class="check-row"><input id="aiWebSearch" type="checkbox">联网搜索（当前渠道支持时）</label>
+        <select id="aiTarget" aria-label="翻译目标语言"><option value="简体中文">中文</option><option value="English">English</option><option value="日本語">日本語</option></select>
+      </div>
+      <div class="sheet-actions"><button type="button" onclick="openAiSettings()">渠道设置</button><button class="save" type="button" onclick="sendAi()">发送</button></div>
+    </section>
+  </div>
+
+  <div id="aiSettingsSheet" class="sheet-backdrop" hidden onclick="backdropClose(event)">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="aiSettingsTitle">
+      <h2 id="aiSettingsTitle">AI 渠道设置</h2>
+      <p class="hint">可添加多个渠道并随时切换。API Key 只在本机使用 Android Keystore 加密保存；地址必须是 HTTPS，可填基础地址或完整接口地址。</p>
+      <div id="aiChannelList" class="channel-list"></div>
+      <div class="sheet-actions">
+        <button type="button" onclick="newAiChannel()">新增渠道</button>
+        <button type="button" onclick="useAiPreset('responses')">Responses 模板</button>
+        <button type="button" onclick="useAiPreset('chat')">兼容模板</button>
+      </div>
+      <div class="form-row"><label for="aiName">渠道名称</label><input id="aiName" maxlength="64" placeholder="例如：工作账号"></div>
+      <div class="form-row"><label for="aiProtocol">协议</label><select id="aiProtocol" onchange="syncAiProtocol()"><option value="responses">Responses（支持内置联网搜索）</option><option value="chat">Chat Completions（兼容渠道）</option></select></div>
+      <div class="form-row"><label for="aiBaseUrl">API 地址（可填基础地址）</label><input id="aiBaseUrl" type="url" inputmode="url" maxlength="500" placeholder="如 https://api.deepseek.com 或 …/v1/responses"></div>
+      <div class="form-row"><label for="aiModel">模型名称</label><input id="aiModel" maxlength="128" placeholder="按渠道填写模型名"></div>
+      <div class="form-row"><label for="aiKey">API Key</label><input id="aiKey" type="password" autocomplete="off" maxlength="500" placeholder="留空则保留已保存的 Key"></div>
+      <label class="check-row"><input id="aiChannelWebSearch" type="checkbox">允许此渠道使用内置联网搜索</label>
+      <p id="aiProtocolHint" class="hint">Responses：可填基础地址，应用会自动补全 /responses；也可填写完整接口地址。</p>
+      <div class="sheet-actions"><button type="button" onclick="closeSheet('aiSettingsSheet')">完成</button><button class="danger" type="button" onclick="deleteAiChannel()">删除当前渠道</button><button class="save" type="button" onclick="saveAiChannel()">保存渠道</button></div>
+    </section>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const state = {
+      title: '', text: '', notes: [], recentFiles: [], recentActionUri: '', selection: null, draftSelection: null, editingId: null,
+      hits: [], hitIndex: -1, ai: { selectedId: '', channels: [] }, aiMessages: [], aiPageMessages: [],
+      aiAnchor: null, aiMode: 'chat', aiPendingId: '', aiPagePendingId: '', html: '', format: 'TXT', chapters: [],
+      documentToken: '', textChunks: [], pendingNotes: [], loading: false, readingProgress: 0, restoringProgress: false,
+      docZoom: 1, editing: false, edited: false
+    };
+    const doc = document.getElementById('document');
+    const reader = document.getElementById('reader');
+    const searchInput = document.getElementById('searchInput');
+    let toastTimer, progressTimer, restoreTimer = 0, restoreSequence = 0, annotationTapGuardUntil = 0;
+
+    function bridge(name, ...args) {
+      if (window.ReaderBridge && typeof ReaderBridge[name] === 'function') return ReaderBridge[name](...args);
+      return undefined;
+    }
+
+    function openTextFile() { flushReadingProgress(); bridge('openTextFile'); }
+    function openRecentFile(uri) {
+      if (typeof uri === 'string' && uri) { flushReadingProgress(); bridge('openRecentFile', uri); }
+    }
+
+    function bridgeJson(value) {
+      if (typeof value !== 'string') return value || {};
+      try { return JSON.parse(value); } catch (_) { return {}; }
+    }
+
+    window.onRecentFiles = function(value) {
+      const incoming = bridgeJson(value);
+      const files = Array.isArray(incoming) ? incoming : [];
+      state.recentFiles = files.filter(file => file && typeof file.uri === 'string' && file.uri)
+        .map(file => ({
+          uri: file.uri,
+          name: String(file.name || '未命名文件'),
+          format: file.format === 'DOCX' ? 'DOCX' : 'TXT',
+          noteCount: Number.isFinite(Number(file.noteCount)) ? Math.max(0, Number(file.noteCount)) : 0,
+          modified: Boolean(file.modified) || Number(file.noteCount) > 0,
+          pinned: Boolean(file.pinned),
+          lastOpened: Number(file.lastOpened) || 0
+        }));
+      state.recentFiles.sort(compareRecentFiles);
+      if (state.recentActionUri && !state.recentFiles.some(file => file.uri === state.recentActionUri)) {
+        closeRecentActions();
+      }
+      if (!state.title) renderHome();
+    };
+
+    function compareRecentFiles(left, right) {
+      return Number(right.pinned) - Number(left.pinned) || right.lastOpened - left.lastOpened;
+    }
+
+    function renderHome() {
+      doc.className = 'home';
+      doc.replaceChildren();
+      const view = document.createElement('section');
+      view.className = 'home-view';
+      const heading = document.createElement('h1');
+      heading.textContent = '最近打开';
+      const hint = document.createElement('p');
+      hint.className = 'hint'; hint.textContent = '点击打开，长按项目可置顶或删除';
+      view.append(heading, hint);
+      if (!state.recentFiles.length) {
+        const empty = document.createElement('div');
+        empty.className = 'home-empty';
+        const message = document.createElement('span');
+        message.textContent = '暂无最近打开的文件';
+        const importButton = document.createElement('button');
+        importButton.type = 'button'; importButton.textContent = '导入 TXT / DOCX';
+        importButton.onclick = openTextFile;
+        empty.append(message, importButton); view.append(empty);
+      } else {
+        const list = document.createElement('div');
+        list.className = 'recent-list';
+        [...state.recentFiles].sort(compareRecentFiles).forEach(file => {
+          const item = document.createElement('button');
+          item.type = 'button'; item.className = `recent-item${file.pinned ? ' pinned' : ''}`;
+          item.title = '点击打开，长按管理项目';
+          item.setAttribute('aria-label', `${file.name}${file.pinned ? '，已置顶' : ''}，点击打开，长按管理项目`);
+          bindRecentItem(item, file);
+          const format = document.createElement('span');
+          format.className = 'recent-format'; format.textContent = file.format;
+          const details = document.createElement('span');
+          details.className = 'recent-details';
+          const name = document.createElement('span');
+          name.className = 'recent-name'; name.textContent = file.name;
+          const meta = document.createElement('span');
+          meta.className = 'recent-meta';
+          meta.textContent = file.modified ? `已修改 · ${file.noteCount} 条批注` : '尚未添加批注';
+          details.append(name, meta);
+          const time = document.createElement('span');
+          time.className = 'recent-time'; time.textContent = file.pinned ? `置顶 · ${recentTime(file.lastOpened)}` : recentTime(file.lastOpened);
+          item.append(format, details, time); list.append(item);
+        });
+        view.append(list);
+      }
+      doc.append(view);
+    }
+
+    function bindRecentItem(item, file) {
+      let pressTimer = 0;
+      let longPressed = false;
+      let startX = 0;
+      let startY = 0;
+      const clearPress = () => {
+        if (pressTimer) clearTimeout(pressTimer);
+        pressTimer = 0;
+      };
+      const finishPress = () => {
+        clearPress();
+        item.classList.remove('long-pressed');
+      };
+      item.addEventListener('pointerdown', event => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        clearPress();
+        longPressed = false;
+        startX = event.clientX; startY = event.clientY;
+        pressTimer = setTimeout(() => {
+          pressTimer = 0;
+          longPressed = true;
+          item.classList.add('long-pressed');
+          openRecentActions(file);
+          if (navigator.vibrate) navigator.vibrate(20);
+        }, 550);
+      });
+      item.addEventListener('pointermove', event => {
+        if (Math.hypot(event.clientX - startX, event.clientY - startY) > 12) clearPress();
+      });
+      item.addEventListener('pointerup', finishPress);
+      item.addEventListener('pointercancel', finishPress);
+      item.addEventListener('pointerleave', finishPress);
+      item.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        clearPress();
+        longPressed = true;
+        openRecentActions(file);
+      });
+      item.addEventListener('keydown', event => {
+        if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
+        event.preventDefault();
+        openRecentActions(file);
+      });
+      item.onclick = event => {
+        if (longPressed) {
+          event.preventDefault();
+          longPressed = false;
+          item.classList.remove('long-pressed');
+          return;
+        }
+        openRecentFile(file.uri);
+      };
+    }
+
+    function selectedRecentFile() {
+      return state.recentFiles.find(file => file.uri === state.recentActionUri) || null;
+    }
+
+    function openRecentActions(file) {
+      if (!file?.uri) return;
+      state.recentActionUri = file.uri;
+      document.getElementById('recentActionsTitle').textContent = file.name || '项目操作';
+      document.getElementById('recentActionsHint').textContent = file.pinned
+        ? '此项目已置顶，取消置顶后会按最近打开时间排序。'
+        : '置顶后会固定在最近打开列表顶部。';
+      document.getElementById('recentPinButton').textContent = file.pinned ? '取消置顶' : '置顶项目';
+      openSheet('recentActionsSheet');
+    }
+
+    function closeRecentActions() {
+      state.recentActionUri = '';
+      closeSheet('recentActionsSheet');
+    }
+
+    function toggleRecentPinned() {
+      const file = selectedRecentFile();
+      if (!file) return closeRecentActions();
+      file.pinned = !file.pinned;
+      bridge('setRecentFilePinned', file.uri, file.pinned);
+      state.recentFiles.sort(compareRecentFiles);
+      closeRecentActions();
+      renderHome();
+      showToast(file.pinned ? '项目已置顶' : '已取消置顶');
+    }
+
+    function deleteSelectedRecent() {
+      const file = selectedRecentFile();
+      if (!file) return closeRecentActions();
+      if (!confirm(`删除“${file.name}”？\n\n只移除轻阅中的项目记录，不会删除原文件。`)) return;
+      bridge('deleteRecentFile', file.uri);
+      state.recentFiles = state.recentFiles.filter(item => item.uri !== file.uri);
+      closeRecentActions();
+      renderHome();
+      showToast('项目已删除');
+    }
+
+    function recentTime(value) {
+      const date = new Date(value);
+      if (!value || !Number.isFinite(date.getTime())) return '';
+      return new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+    }
+
+    function selectedAiChannel() {
+      return state.ai.channels.find(channel => channel.id === state.ai.selectedId) || null;
+    }
+
+    function newId(prefix) {
+      return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function toggleAiPage() {
+      if (document.getElementById('aiPage').hidden) openAiPage();
+      else closeAiPage();
+    }
+
+    function openAiPage() {
+      closeAiChat();
+      state.aiAnchor = null;
+      state.aiMode = 'chat';
+      state.selection = null;
+      state.draftSelection = null;
+      window.getSelection()?.removeAllRanges();
+      document.getElementById('selectionBar').hidden = true;
+      renderAiPageMessages();
+      updateAiChannelStatus();
+      document.getElementById('aiPage').hidden = false;
+      document.body.classList.add('ai-page-open');
+      document.getElementById('aiToggle').setAttribute('aria-pressed', 'true');
+      bridge('getAiState');
+    }
+
+    function closeAiPage() {
+      document.getElementById('aiPage').hidden = true;
+      document.body.classList.remove('ai-page-open');
+      document.getElementById('aiToggle').setAttribute('aria-pressed', 'false');
+    }
+
+    function openAiChat(keepAnchor = false) {
+      closeAiPage();
+      if (!keepAnchor) {
+        state.aiAnchor = null;
+        state.aiMode = 'chat';
+      }
+      updateAiContext();
+      renderAiMessages();
+      updateAiChannelStatus();
+      document.getElementById('aiSheet').hidden = false;
+      document.body.classList.add('ai-open');
+      document.getElementById('aiToggle').setAttribute('aria-pressed', 'false');
+      bridge('getAiState');
+    }
+
+    function closeAiChat() {
+      document.getElementById('aiSheet').hidden = true;
+      document.body.classList.remove('ai-open');
+      if (document.getElementById('aiPage').hidden) {
+        document.getElementById('aiToggle').setAttribute('aria-pressed', 'false');
+      }
+    }
+
+    window.handleNativeBack = function() {
+      const layeredSheets = ['aiSettingsSheet', 'noteEditor', 'notesSheet', 'settingsSheet',
+        'tocSheet', 'recentActionsSheet', 'docxThemeSheet'];
+      for (const id of layeredSheets) {
+        const sheet = document.getElementById(id);
+        if (sheet && !sheet.hidden) { closeSheet(id); return true; }
+      }
+      if (!document.getElementById('aiPage').hidden) { closeAiPage(); return true; }
+      if (!document.getElementById('aiSheet').hidden) { closeAiChat(); return true; }
+      if (!document.getElementById('searchBar').hidden) { toggleSearch(false); return true; }
+      if (!document.getElementById('selectionBar').hidden) {
+        window.getSelection()?.removeAllRanges();
+        state.selection = null; state.draftSelection = null;
+        document.getElementById('selectionBar').hidden = true;
+        return true;
+      }
+      return false;
+    };
+
+    function openAiSettings() {
+      openSheet('aiSettingsSheet');
+      bridge('getAiState');
+    }
+
+    window.onAiState = function(value) {
+      const incoming = bridgeJson(value);
+      const channels = Array.isArray(incoming.channels) ? incoming.channels : [];
+      state.ai.channels = channels.map(channel => ({
+        id: String(channel.id || newId('channel')),
+        name: String(channel.name || '未命名渠道'),
+        protocol: channel.protocol === 'responses' ? 'responses' : 'chat',
+        baseUrl: String(channel.baseUrl || ''), model: String(channel.model || ''),
+        webSearch: Boolean(channel.webSearch), hasKey: Boolean(channel.hasKey)
+      }));
+      state.ai.selectedId = String(incoming.selectedId || '');
+      if (!selectedAiChannel() && state.ai.channels.length) state.ai.selectedId = state.ai.channels[0].id;
+      renderAiChannels();
+      renderAiChannelSelect();
+      syncAiForm();
+      updateAiChannelStatus();
+    };
+
+    function renderAiChannels() {
+      const list = document.getElementById('aiChannelList');
+      list.replaceChildren();
+      if (!state.ai.channels.length) {
+        const empty = document.createElement('p');
+        empty.className = 'hint'; empty.textContent = '还没有渠道。可以使用模板后再填写自己的地址和 Key。';
+        list.append(empty); return;
+      }
+      state.ai.channels.forEach(channel => {
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = `channel-item${channel.id === state.ai.selectedId ? ' active' : ''}`;
+        const name = document.createElement('span');
+        name.textContent = channel.name || '未命名渠道';
+        const detail = document.createElement('small');
+        detail.textContent = `${channel.protocol === 'responses' ? 'Responses' : 'Chat'} · ${channel.model || '未填模型'}`;
+        name.append(detail);
+        const key = document.createElement('span');
+        key.className = 'key-state'; key.textContent = channel.hasKey ? 'Key ✓' : '未配置';
+      button.append(name, key); button.onclick = () => selectAiChannel(channel.id);
+        list.append(button);
+      });
+    }
+
+    function renderAiChannelSelect() {
+      ['aiChannelSelect', 'aiPageChannelSelect'].forEach(id => {
+        const select = document.getElementById(id);
+        if (!select) return;
+        select.replaceChildren();
+        if (!state.ai.channels.length) {
+          const option = document.createElement('option'); option.value = ''; option.textContent = '未配置渠道';
+          select.append(option); select.disabled = true; return;
+        }
+        state.ai.channels.forEach(channel => {
+          const option = document.createElement('option'); option.value = channel.id;
+          option.textContent = channel.name || '未命名渠道'; select.append(option);
+        });
+        select.disabled = false; select.value = state.ai.selectedId;
+      });
+    }
+
+    function selectAiChannel(id) {
+      state.ai.selectedId = id;
+      renderAiChannels(); renderAiChannelSelect(); syncAiForm(); updateAiChannelStatus();
+    }
+
+    function syncAiForm() {
+      const channel = selectedAiChannel();
+      document.getElementById('aiName').value = channel?.name || '';
+      document.getElementById('aiProtocol').value = channel?.protocol || 'responses';
+      document.getElementById('aiBaseUrl').value = channel?.baseUrl || '';
+      document.getElementById('aiModel').value = channel?.model || '';
+      document.getElementById('aiKey').value = '';
+      document.getElementById('aiChannelWebSearch').checked = Boolean(channel?.webSearch);
+      syncAiProtocol();
+    }
+
+    function syncAiProtocol() {
+      const responses = document.getElementById('aiProtocol').value === 'responses';
+      const checkbox = document.getElementById('aiChannelWebSearch');
+      checkbox.disabled = !responses;
+      if (!responses) checkbox.checked = false;
+      document.getElementById('aiProtocolHint').textContent = responses
+        ? 'Responses：可填基础地址（如 https://api.deepseek.com），应用会自动补全 /responses；也可填写完整接口地址。勾选联网后会要求服务商执行 web_search。'
+        : 'Chat：可填基础地址，应用会自动补全 /chat/completions（兼容地址通常为 /v1/chat/completions）；也可填写完整接口地址。';
+    }
+
+    function newAiChannel() {
+      const channel = { id: newId('channel'), name: '新渠道', protocol: 'responses', baseUrl: '', model: '', webSearch: true, hasKey: false };
+      state.ai.channels.push(channel); state.ai.selectedId = channel.id;
+      renderAiChannels(); renderAiChannelSelect(); syncAiForm(); updateAiChannelStatus();
+      document.getElementById('aiName').focus();
+    }
+
+    function useAiPreset(protocol) {
+      newAiChannel();
+      const channel = selectedAiChannel();
+      if (protocol === 'responses') {
+        channel.name = 'OpenAI Responses'; channel.protocol = 'responses';
+        channel.baseUrl = 'https://api.openai.com/v1/responses'; channel.model = 'gpt-5.4-mini'; channel.webSearch = true;
+      } else {
+        channel.name = 'OpenAI 兼容渠道'; channel.protocol = 'chat';
+        channel.baseUrl = 'https://api.openai.com/v1/chat/completions'; channel.model = 'gpt-5.4-mini'; channel.webSearch = false;
+      }
+      renderAiChannels(); renderAiChannelSelect(); syncAiForm(); updateAiChannelStatus();
+      showToast('模板已填入，请填写 API Key 后保存');
+    }
+
+    function aiPayload() {
+      return {
+        selectedId: state.ai.selectedId,
+        channels: state.ai.channels.map(channel => ({ ...channel }))
+      };
+    }
+
+    function persistAiState() {
+      bridge('saveAiState', JSON.stringify(aiPayload()));
+      renderAiChannels(); renderAiChannelSelect(); updateAiChannelStatus();
+    }
+
+    function saveAiChannel() {
+      const channel = selectedAiChannel();
+      if (!channel) return showToast('请先新增或选择一个渠道');
+      const name = document.getElementById('aiName').value.trim();
+      const protocol = document.getElementById('aiProtocol').value;
+      const baseUrl = document.getElementById('aiBaseUrl').value.trim();
+      const model = document.getElementById('aiModel').value.trim();
+      const key = document.getElementById('aiKey').value.trim();
+      if (!name || !baseUrl || !model) return showToast('名称、API 地址和模型名称不能为空');
+      if (!baseUrl.startsWith('https://')) return showToast('API 地址必须使用 HTTPS');
+      channel.name = name; channel.protocol = protocol === 'responses' ? 'responses' : 'chat';
+      channel.baseUrl = baseUrl; channel.model = model;
+      channel.webSearch = channel.protocol === 'responses' && document.getElementById('aiChannelWebSearch').checked;
+      if (key) { channel.apiKey = key; channel.hasKey = true; }
+      persistAiState();
+      document.getElementById('aiKey').value = '';
+      bridge('getAiState');
+      showToast('AI 渠道已保存');
+    }
+
+    function deleteAiChannel() {
+      const channel = selectedAiChannel();
+      if (!channel) return showToast('没有可删除的渠道');
+      if (!confirm(`删除“${channel.name}”？`)) return;
+      state.ai.channels = state.ai.channels.filter(item => item.id !== channel.id);
+      state.ai.selectedId = state.ai.channels[0]?.id || '';
+      persistAiState(); syncAiForm();
+      showToast('渠道已删除');
+    }
+
+    function updateAiChannelStatus() {
+      const channel = selectedAiChannel();
+      const status = document.getElementById('aiChannelStatus');
+      const search = document.getElementById('aiWebSearch');
+      const pageStatus = document.getElementById('aiPageChannelStatus');
+      const pageSearch = document.getElementById('aiPageWebSearch');
+      if (!channel) {
+        const empty = '尚未配置 AI 渠道，请打开“渠道设置”。';
+        status.textContent = empty;
+        if (pageStatus) pageStatus.textContent = empty;
+        search.checked = false; search.disabled = true;
+        if (pageSearch) { pageSearch.checked = false; pageSearch.disabled = true; }
+        return;
+      }
+      const summary = `${channel.name} · ${channel.protocol === 'responses' ? 'Responses' : '兼容 Chat'} · ${channel.hasKey ? 'Key 已配置' : '未配置 Key'}`;
+      status.textContent = summary;
+      if (pageStatus) pageStatus.textContent = summary;
+      search.disabled = channel.protocol !== 'responses' || !channel.webSearch;
+      if (search.disabled) search.checked = false;
+      if (pageSearch) {
+        pageSearch.disabled = channel.protocol !== 'responses' || !channel.webSearch;
+        if (pageSearch.disabled) pageSearch.checked = false;
+      }
+    }
+
+    function updateAiContext() {
+      const context = document.getElementById('aiContext');
+      if (!state.aiAnchor) { context.hidden = true; context.textContent = ''; return; }
+      context.hidden = false;
+      context.textContent = `选中文字：\n“${state.aiAnchor.quote}”`;
+    }
+
+    function askSelection(kind) {
+      const selection = state.selection;
+      if (!selection) return showToast('请先选中一段文字');
+      state.aiAnchor = { ...selection };
+      state.aiMode = kind;
+      state.aiMessages = [];
+      window.getSelection()?.removeAllRanges();
+      document.getElementById('selectionBar').hidden = true;
+      const prompt = document.getElementById('aiPrompt');
+      prompt.value = kind === 'explain' ? '请解释选中文字' : kind === 'translate' ? '请翻译选中文字' : '';
+      openAiChat(true);
+      if (selectedAiChannel()) setTimeout(() => sendAi(), 80);
+      else showToast('请先在渠道设置中填写 API Key');
+    }
+
+    function copySelection() {
+      if (!state.selection) return showToast('请先选中一段文字');
+      if (window.ReaderBridge && typeof ReaderBridge.copyText === 'function') {
+        ReaderBridge.copyText(state.selection.quote);
+      } else if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(state.selection.quote)
+          .then(() => showToast('已复制选中文字'))
+          .catch(() => showToast('当前环境不支持复制'));
+      } else {
+        showToast('当前环境不支持复制');
+      }
+      window.getSelection()?.removeAllRanges();
+      state.selection = null;
+      state.draftSelection = null;
+      document.getElementById('selectionBar').hidden = true;
+    }
+
+    function buildAiPrompt(raw) {
+      const anchor = state.aiAnchor;
+      const quote = anchor ? anchor.quote.slice(0, 8000) : '';
+      if (!anchor) return raw;
+      if (state.aiMode === 'explain') {
+        return `请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「${quote}」`;
+      }
+      if (state.aiMode === 'translate') {
+        const target = document.getElementById('aiTarget').value;
+        return `请把以下文字翻译成${target}，只返回译文，不要添加说明：\n\n「${quote}」`;
+      }
+      return `请围绕以下选中文字回答用户问题。选中文字：\n「${quote}」\n\n用户问题：${raw}`;
+    }
+
+    function sendAi() {
+      const channel = selectedAiChannel();
+      if (!channel) { showToast('请先配置 AI 渠道'); openAiSettings(); return; }
+      if (state.aiPendingId) return showToast('上一条 AI 请求还没完成');
+      const raw = document.getElementById('aiPrompt').value.trim();
+      if (!raw && state.aiMode === 'chat') return showToast('请输入问题');
+      const prompt = buildAiPrompt(raw || (state.aiMode === 'explain' ? '请解释' : '请翻译'));
+      const history = state.aiMessages.filter(message => !message.pending).slice(-8).map(message => ({ role: message.role, text: message.text }));
+      const requestId = newId('ai-context');
+      const anchor = state.aiAnchor ? { ...state.aiAnchor } : null;
+      state.aiPendingId = requestId;
+      state.aiMessages.push({ role: 'user', text: raw || (state.aiMode === 'explain' ? '讲解选中文字' : '翻译选中文字') });
+      state.aiMessages.push({ role: 'assistant', text: '正在请求 AI…', pending: true, id: requestId, anchor });
+      renderAiMessages();
+      bridge('sendAiRequest', JSON.stringify({
+        id: requestId, channelId: channel.id, prompt, history,
+        webSearch: document.getElementById('aiWebSearch').checked, anchor
+      }));
+      document.getElementById('aiPrompt').value = '';
+      state.aiMode = 'chat';
+    }
+
+    function sendAiPage() {
+      const channel = selectedAiChannel();
+      if (!channel) { showToast('请先配置 AI 渠道'); openAiSettings(); return; }
+      if (state.aiPagePendingId) return showToast('上一条 AI 请求还没完成');
+      const prompt = document.getElementById('aiPagePrompt');
+      const raw = prompt.value.trim();
+      if (!raw) return showToast('请输入问题');
+      const history = state.aiPageMessages.filter(message => !message.pending).slice(-8)
+        .map(message => ({ role: message.role, text: message.text }));
+      const requestId = newId('ai-page');
+      state.aiPagePendingId = requestId;
+      state.aiPageMessages.push({ role: 'user', text: raw });
+      state.aiPageMessages.push({ role: 'assistant', text: '正在请求 AI…', pending: true, id: requestId });
+      renderAiPageMessages();
+      bridge('sendAiRequest', JSON.stringify({
+        id: requestId, channelId: channel.id, prompt: raw, history,
+        webSearch: document.getElementById('aiPageWebSearch').checked, anchor: null
+      }));
+      prompt.value = '';
+    }
+
+    window.onAiResult = function(value) {
+      const payload = bridgeJson(value);
+      if (!payload.id) return;
+      if (payload.id === state.aiPagePendingId) {
+        const index = state.aiPageMessages.findIndex(message => message.pending && message.id === payload.id);
+        if (index < 0) return;
+        state.aiPageMessages.splice(index, 1);
+        state.aiPagePendingId = '';
+        state.aiPageMessages.push(payload.ok
+          ? { role: 'assistant', text: String(payload.text || ''), citations: Array.isArray(payload.citations) ? payload.citations : [] }
+          : { role: 'assistant', text: `请求失败：${payload.error || '未知错误'}` });
+        renderAiPageMessages();
+        return;
+      }
+      if (payload.id !== state.aiPendingId) return;
+      const index = state.aiMessages.findIndex(message => message.pending && message.id === payload.id);
+      if (index < 0) return;
+      const requestAnchor = state.aiMessages[index].anchor || null;
+      state.aiMessages.splice(index, 1);
+      state.aiPendingId = '';
+      state.aiMessages.push(payload.ok
+        ? {
+          role: 'assistant', text: String(payload.text || ''),
+          citations: Array.isArray(payload.citations) ? payload.citations : [], anchor: requestAnchor
+        }
+        : { role: 'assistant', text: `请求失败：${payload.error || '未知错误'}` });
+      renderAiMessages();
+    };
+
+    function renderAiMessages() {
+      renderAiMessageList(document.getElementById('aiMessages'), state.aiMessages, true);
+    }
+
+    function renderAiPageMessages() {
+      renderAiMessageList(document.getElementById('aiPageMessages'), state.aiPageMessages, false);
+    }
+
+    function renderAiMessageList(list, messages, contextual) {
+      if (!list) return;
+      list.replaceChildren();
+      if (!messages.length) {
+        const empty = document.createElement('p'); empty.className = 'hint';
+        empty.textContent = contextual ? '可以先选中文字，再点击“讲解”或“翻译”。' : '直接输入问题，开始与 AI 对话。';
+        list.append(empty); return;
+      }
+      messages.forEach((message, index) => {
+        const item = document.createElement('article');
+        item.className = `ai-message ${message.role}${message.pending ? ' pending' : ''}`;
+        item.textContent = message.text;
+        if (message.citations?.length) {
+          const citations = document.createElement('div'); citations.className = 'ai-citations';
+          message.citations.forEach(citation => {
+            if (!citation?.url) return;
+            const button = document.createElement('button'); button.type = 'button';
+            button.textContent = `来源：${citation.title || citation.url}`;
+            button.onclick = () => bridge('openExternalUrl', citation.url); citations.append(button);
+          });
+          item.append(citations);
+        }
+        if (contextual && message.role === 'assistant' && !message.pending && message.anchor) {
+          const actions = document.createElement('div'); actions.className = 'ai-message-actions';
+          const noteButton = document.createElement('button'); noteButton.type = 'button'; noteButton.textContent = '把回答加入批注';
+          noteButton.onclick = () => addAiResponseAsNote(index); actions.append(noteButton); item.append(actions);
+          const globalNoteButton = document.createElement('button'); globalNoteButton.type = 'button'; globalNoteButton.textContent = '把回答加入全局批注';
+          globalNoteButton.onclick = () => addAiResponseAsGlobalNote(index); actions.append(globalNoteButton);
+        }
+        list.append(item);
+      });
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function addAiResponseAsNote(index) {
+      return addAiResponseAnnotation(index, false);
+    }
+
+    function addAiResponseAsGlobalNote(index) {
+      return addAiResponseAnnotation(index, true);
+    }
+
+    function addAiResponseAnnotation(index, global) {
+      const message = state.aiMessages[index];
+      const anchor = message?.anchor;
+      if (!message || !anchor) return;
+      const result = createAnnotation(anchor, `AI：${message.text}`, global);
+      if (result.error) return showToast(result.error);
+      renderDocument(); renderAiMessages();
+      const overwritten = result.overwritten ? `，覆盖 ${result.overwritten} 条已有批注` : '';
+      showToast(global ? `AI 回答已加入全局批注（${result.count} 处${overwritten}）` : 'AI 回答已加入批注');
+    }
+
+    function onDisplayButton() {
+      if (!state.title) return openSheet('settingsSheet');
+      if (state.editing) return saveEdit();
+      if (state.format === 'DOCX' && !state.loading) return enterEdit();
+      showToast('TXT 编辑功能开发中');
+    }
+
+    function setEditingUi(editing) {
+      document.getElementById('searchButton').hidden = editing;
+      document.getElementById('aiToggle').hidden = editing;
+      document.getElementById('undoButton').hidden = !editing;
+      document.getElementById('redoButton').hidden = !editing;
+      const button = document.getElementById('displayButton');
+      button.textContent = editing ? '保存' : '编辑';
+      button.setAttribute('aria-label', editing ? '保存修改' : '编辑文档');
+      document.getElementById('notesButton').disabled = editing;
+      document.getElementById('exportButton').disabled = editing;
+    }
+
+    function enterEdit() {
+      if (state.format !== 'DOCX' || state.loading || state.editing) return;
+      toggleSearch(false);
+      closeAiPage();
+      closeAiChat();
+      window.getSelection()?.removeAllRanges();
+      state.selection = null; state.draftSelection = null;
+      document.getElementById('selectionBar').hidden = true;
+      const ratio = readingProgressRatio();
+      state.editing = true;
+      renderDocument();
+      doc.contentEditable = 'true';
+      setEditingUi(true);
+      requestAnimationFrame(() => {
+        const maxScroll = Math.max(0, reader.scrollHeight - reader.clientHeight);
+        setReaderScrollTop(Math.round(maxScroll * ratio));
+      });
+    }
+
+    // Editable DOM can lose the "text nodes concatenate to state.text" invariant that
+    // annotations, search and export rely on: typed Enter splits blocks without the \n
+    // text node the renderer emits, and the browser inserts <br> for empty lines.
+    // Repair the DOM so textContent is the new text projection.
+    const DOCX_BLOCK_TAGS = new Set(['DIV', 'P', 'TABLE', 'TBODY', 'THEAD', 'TFOOT', 'TR', 'TD', 'TH',
+      'UL', 'OL', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'SECTION', 'ARTICLE', 'PRE', 'HR']);
+    function normalizeDocxDom(root) {
+      let lastChar = '\n';
+      const visit = node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (node.data) lastChar = node.data.slice(-1);
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        if (node.tagName === 'BR') { node.replaceWith('\n'); lastChar = '\n'; return; }
+        if (DOCX_BLOCK_TAGS.has(node.tagName) && lastChar !== '\n') {
+          node.before('\n');
+          lastChar = '\n';
+        }
+        let child = node.firstChild;
+        while (child) { const next = child.nextSibling; visit(child); child = next; }
+      };
+      let child = root.firstChild;
+      while (child) { const next = child.nextSibling; visit(child); child = next; }
+    }
+
+    function reanchorNotes(text) {
+      const kept = [];
+      let cursor = 0;
+      for (const note of state.notes) {
+        if (!note.quote) continue;
+        let at = -1;
+        if (note.start >= cursor && text.startsWith(note.quote, note.start)) at = note.start;
+        else at = text.indexOf(note.quote, cursor);
+        if (at < 0) continue;
+        kept.push({ ...note, start: at, end: at + note.quote.length });
+        cursor = at + note.quote.length;
+      }
+      return kept;
+    }
+
+    function saveEdit() {
+      if (!state.editing) return;
+      doc.removeAttribute('contenteditable');
+      doc.querySelectorAll('mark.annotation, span.search-hit')
+        .forEach(el => el.replaceWith(...el.childNodes));
+      normalizeDocxDom(doc);
+      doc.normalize();
+      const text = doc.textContent;
+      const html = doc.innerHTML;
+      if (html.length > 5 * 1024 * 1024) {
+        doc.contentEditable = 'true';
+        return showToast('文档过大，无法保存');
+      }
+      const before = state.notes.length;
+      state.notes = reanchorNotes(text);
+      state.text = text;
+      state.html = html;
+      state.editing = false;
+      state.edited = true;
+      setEditingUi(false);
+      setDocumentHeader('DOCX', text.length);
+      renderDocument();
+      bridge('saveEditedDocument', JSON.stringify({
+        text, html, notes: state.notes, noteCount: annotationCount()
+      }));
+      const dropped = before - state.notes.length;
+      showToast(dropped > 0 ? `修改已保存，${dropped} 条批注因原文变动已移除` : '修改已保存');
+    }
+
+    function setDocumentHeader(format, count, loading = false) {
+      const kind = format === 'DOCX' ? 'DOCX' : 'TXT';
+      document.getElementById('fileName').textContent = state.title;
+      document.getElementById('status').textContent = loading
+        ? `${kind} · 正在导入…`
+        : `${kind} · ${Number(count || 0).toLocaleString()} 字符`;
+      document.getElementById('homeButton').textContent = '返回';
+      document.getElementById('homeButton').setAttribute('aria-label', '返回主页');
+      document.getElementById('homeButton').onclick = goHome;
+      document.getElementById('displayButton').textContent = '编辑';
+      document.getElementById('displayButton').setAttribute('aria-label', '编辑文档');
+      document.getElementById('notesButton').disabled = loading;
+      document.getElementById('exportButton').disabled = loading;
+      document.getElementById('exportButton').textContent = `导出 ${kind}`;
+      document.getElementById('tocButton').hidden = kind !== 'TXT' || !state.chapters.length || loading;
+      updateDocxZoomUi();
+    }
+
+    function renderTextLoading(percent = 0) {
+      doc.className = 'loading txt';
+      doc.style.removeProperty('font-size');
+      doc.style.removeProperty('line-height');
+      doc.replaceChildren();
+      const view = document.createElement('section'); view.className = 'loading-view';
+      const title = document.createElement('strong'); title.textContent = state.title || '正在打开文件';
+      const message = document.createElement('span'); message.textContent = `正在整理正文 ${percent}%`;
+      const track = document.createElement('div'); track.className = 'loading-track';
+      const bar = document.createElement('span'); bar.style.width = `${percent}%`; track.append(bar);
+      view.append(title, message, track); doc.append(view);
+    }
+
+    function scheduleIdle(task) {
+      if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(() => task(), { timeout: 100 });
+      } else {
+        setTimeout(task, 16);
+      }
+    }
+
+    function updateTextLoading(percent) {
+      const bar = doc.querySelector('.loading-track span');
+      const message = doc.querySelector('.loading-view span');
+      if (bar) bar.style.width = `${percent}%`;
+      if (message) message.textContent = `正在整理正文 ${percent}%`;
+      document.getElementById('status').textContent = `TXT · 正在导入 ${percent}%`;
+    }
+
+    function finishTextLoad(progress, token) {
+      if (token !== state.documentToken || !state.loading) return;
+      state.text = state.textChunks.join('');
+      state.textChunks = [];
+      state.loading = false;
+      state.notes = normalizeNotes(state.pendingNotes);
+      state.pendingNotes = [];
+      state.editingId = null;
+      state.chapters = parseTxtChapters(state.text);
+      setDocumentHeader('TXT', state.text.length);
+      renderDocument();
+      syncAnnotationCount();
+      renderToc();
+      applySettings();
+      restoreReadingProgress(progress);
+    }
+
+    function loadTextChunks(progress, token, totalLength) {
+      let offset = 0;
+      const pump = () => {
+        if (token !== state.documentToken || !state.loading) return;
+        const started = performance.now();
+        let calls = 0;
+        while (offset < totalLength && calls < 2 && performance.now() - started < 12) {
+          const chunk = bridge('getTextChunk', token, offset, 96 * 1024);
+          if (typeof chunk !== 'string' || !chunk.length) {
+            if (token !== state.documentToken || !state.loading) return;
+            state.loading = false;
+            state.textChunks = []; state.pendingNotes = [];
+            document.getElementById('status').textContent = 'TXT · 打开失败';
+            showToast('正文读取失败，请重新导入');
+            return;
+          }
+          state.textChunks.push(chunk);
+          offset += chunk.length;
+          calls++;
+        }
+        if (token !== state.documentToken || !state.loading) return;
+        const percent = totalLength ? Math.min(100, Math.round(offset * 100 / totalLength)) : 100;
+        updateTextLoading(percent);
+        if (offset < totalLength) scheduleIdle(pump);
+        else finishTextLoad(progress, token);
+      };
+      if (!totalLength) finishTextLoad(progress, token);
+      else scheduleIdle(pump);
+    }
+
+    function isTxtHeading(line) {
+      const candidate = line.trim().replace(/\s+/g, ' ');
+      if (!candidate || candidate.length > 160) return false;
+      return /^第\s*[0-9０-９零〇一二三四五六七八九十百千万两]+\s*[章节卷部篇回集](?:\s|[:：、\-—.．【】《》()（）]|$).{0,140}$/.test(candidate)
+        || /^(?:卷|部)\s*[0-9０-９零〇一二三四五六七八九十百千万两]+(?:\s|[:：、\-—.．【】《》()（）]|$).{0,140}$/.test(candidate)
+        || /^(?:序章|楔子|引子|尾声|终章|后记|番外(?:篇)?)(?:\s|[:：、\-—.．【】《》()（）]|$).{0,140}$/.test(candidate)
+        || /^(?:chapter|part|prologue|epilogue)\b.{0,140}$/i.test(candidate);
+    }
+
+    function parseTxtChapters(text) {
+      const chapters = [];
+      let lineStart = 0;
+      while (lineStart <= text.length) {
+        const newline = text.indexOf('\n', lineStart);
+        const lineEnd = newline < 0 ? text.length : newline;
+        const line = text.slice(lineStart, lineEnd);
+        if (isTxtHeading(line)) {
+          const title = line.trim().replace(/\s+/g, ' ');
+          if (!chapters.length || chapters[chapters.length - 1].start !== lineStart) {
+            chapters.push({ start: lineStart, headingEnd: lineEnd, title });
+          }
+        }
+        if (newline < 0) break;
+        lineStart = newline + 1;
+      }
+      return chapters;
+    }
+
+    function appendTxtSection(parent, start, end, chapter, index) {
+      if (end <= start && (!chapter || chapter.headingEnd <= chapter.start)) return;
+      const section = document.createElement('section');
+      section.className = chapter ? 'txt-chapter' : 'txt-preamble';
+      if (chapter) {
+        section.dataset.chapterIndex = String(index);
+        const heading = document.createElement('h2');
+        heading.className = 'txt-chapter-heading';
+        heading.textContent = state.text.slice(chapter.start, chapter.headingEnd);
+        section.append(heading);
+      }
+      const bodyStart = chapter ? chapter.headingEnd : start;
+      if (bodyStart < end) {
+        const body = document.createElement('div');
+        body.className = 'txt-chapter-body';
+        body.textContent = state.text.slice(bodyStart, end);
+        section.append(body);
+      }
+      parent.append(section);
+    }
+
+    function renderTxtDocument() {
+      const fragment = document.createDocumentFragment();
+      const chapters = state.chapters;
+      if (!chapters.length) {
+        appendTxtSection(fragment, 0, state.text.length, null, -1);
+        doc.append(fragment);
+        return;
+      }
+      if (chapters[0].start > 0) appendTxtSection(fragment, 0, chapters[0].start, null, -1);
+      chapters.forEach((chapter, index) => {
+        const end = index + 1 < chapters.length ? chapters[index + 1].start : state.text.length;
+        appendTxtSection(fragment, chapter.start, end, chapter, index);
+      });
+      doc.append(fragment);
+    }
+
+    function renderToc() {
+      const list = document.getElementById('tocList');
+      list.replaceChildren();
+      state.chapters.forEach((chapter, index) => {
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = 'toc-item';
+        button.textContent = `${index + 1}. ${chapter.title}`;
+        button.onclick = () => jumpToChapter(index);
+        list.append(button);
+      });
+      document.getElementById('tocButton').hidden = state.format !== 'TXT' || !state.chapters.length || state.loading;
+    }
+
+    function openToc() {
+      if (state.format !== 'TXT' || !state.chapters.length) return showToast('当前文件没有可用目录');
+      renderToc(); openSheet('tocSheet');
+    }
+
+    function jumpToChapter(index) {
+      closeSheet('tocSheet');
+      doc.querySelector(`[data-chapter-index="${index}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function updateDocxZoomUi() {
+      const showZoom = state.format === 'DOCX' && !state.loading && Boolean(state.title);
+      document.getElementById('footerZoom').hidden = !showZoom;
+      document.getElementById('settingsButton').hidden = showZoom;
+      document.documentElement.style.setProperty('--doc-zoom', String(state.docZoom));
+      document.getElementById('docxZoomReset').textContent = `${Math.round(state.docZoom * 100)}%`;
+    }
+
+    function applyDocZoom() {
+      const ratio = readingProgressRatio();
+      updateDocxZoomUi();
+      requestAnimationFrame(() => {
+        const maxScroll = Math.max(0, reader.scrollHeight - reader.clientHeight);
+        setReaderScrollTop(Math.round(maxScroll * ratio));
+      });
+    }
+
+    function adjustDocZoom(delta) {
+      if (state.format !== 'DOCX') return;
+      state.docZoom = Math.max(.75, Math.min(2.5, Math.round((state.docZoom + delta) * 100) / 100));
+      applyDocZoom();
+    }
+
+    function resetDocZoom() {
+      if (state.format !== 'DOCX') return;
+      state.docZoom = 1;
+      reader.scrollLeft = 0;
+      applyDocZoom();
+      showToast('Word 缩放已还原为 100%');
+    }
+
+    let pinchStart = null;
+    function touchDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.hypot(dx, dy);
+    }
+    doc.addEventListener('touchstart', event => {
+      if (state.format === 'DOCX' && event.touches.length === 2) {
+        pinchStart = { distance: touchDistance(event.touches), zoom: state.docZoom };
+        event.preventDefault();
+      }
+    }, { passive: false });
+    doc.addEventListener('touchmove', event => {
+      if (!pinchStart || state.format !== 'DOCX' || event.touches.length < 2) return;
+      const distance = touchDistance(event.touches);
+      if (distance > 0) {
+        state.docZoom = Math.max(.75, Math.min(2.5,
+          Math.round(pinchStart.zoom * distance / pinchStart.distance * 100) / 100));
+        applyDocZoom();
+      }
+      event.preventDefault();
+    }, { passive: false });
+    doc.addEventListener('touchend', event => {
+      if (event.touches.length < 2) pinchStart = null;
+    }, { passive: true });
+    doc.addEventListener('touchcancel', () => { pinchStart = null; }, { passive: true });
+
+    function setReaderScrollTop(top) {
+      const previous = reader.style.scrollBehavior;
+      // The stylesheet intentionally uses smooth scrolling for user actions. Explicitly
+      // switch it off for restore/zoom writes or the browser only reaches an intermediate
+      // position while content-visibility is still expanding.
+      reader.style.scrollBehavior = 'auto';
+      reader.scrollTop = Math.max(0, top);
+      if (previous) reader.style.scrollBehavior = previous;
+      else reader.style.removeProperty('scroll-behavior');
+    }
+
+    window.loadDocument = function(title, text, notes, format, html, progress, edited) {
+      cancelProgressRestore();
+      state.title = String(title || '未命名文件');
+      state.text = String(text || '');
+      state.textChunks = []; state.pendingNotes = [];
+      state.loading = false; state.documentToken = '';
+      state.format = format === 'DOCX' ? 'DOCX' : 'TXT';
+      state.html = typeof html === 'string' && html ? html : '';
+      state.chapters = state.format === 'TXT' ? parseTxtChapters(state.text) : [];
+      state.notes = normalizeNotes(notes);
+      state.selection = null; state.draftSelection = null; state.editingId = null; state.docZoom = 1;
+      state.edited = state.format === 'DOCX' && Boolean(edited);
+      setDocumentHeader(state.format, state.text.length);
+      toggleSearch(false);
+      renderDocument(); syncAnnotationCount(); renderToc(); applySettings(); updateDocxZoomUi();
+      restoreReadingProgress(progress);
+    };
+
+    window.beginTextDocument = function(title, notes, progress, token, totalLength) {
+      if (state.loading && state.documentToken === String(token || '')) return;
+      cancelProgressRestore();
+      state.title = String(title || '未命名文件'); state.text = ''; state.html = '';
+      state.format = 'TXT'; state.chapters = []; state.textChunks = [];
+      state.pendingNotes = Array.isArray(notes) ? notes : [];
+      state.documentToken = String(token || ''); state.loading = true; state.docZoom = 1;
+      state.selection = null; state.draftSelection = null; state.editingId = null; state.notes = []; state.edited = false;
+      setDocumentHeader('TXT', totalLength, true); toggleSearch(false); renderTextLoading();
+      loadTextChunks(progress, state.documentToken, Math.max(0, Number(totalLength) || 0));
+    };
+
+    window.goHome = function() {
+      if (state.editing) {
+        if (!confirm('正在编辑 Word 文档，返回将放弃未保存的修改。确定返回？')) return;
+        state.editing = false;
+        doc.removeAttribute('contenteditable');
+        setEditingUi(false);
+      }
+      cancelProgressRestore();
+      flushReadingProgress();
+      toggleSearch(false);
+      closeAiPage();
+      closeAiChat();
+      ['noteEditor', 'notesSheet', 'settingsSheet', 'aiSettingsSheet', 'tocSheet', 'recentActionsSheet', 'docxThemeSheet'].forEach(id => {
+        document.getElementById(id).hidden = true;
+      });
+      window.getSelection()?.removeAllRanges();
+      state.title = ''; state.text = ''; state.html = ''; state.notes = []; state.chapters = [];
+      state.textChunks = []; state.pendingNotes = []; state.documentToken = '';
+      state.loading = false; state.format = 'TXT'; state.docZoom = 1; state.edited = false;
+      state.selection = null; state.draftSelection = null; state.editingId = null;
+      state.recentActionUri = '';
+      state.hits = []; state.hitIndex = -1; state.aiAnchor = null;
+      state.aiMessages = []; state.aiPendingId = '';
+      state.aiPageMessages = []; state.aiPagePendingId = ''; state.aiMode = 'chat';
+      state.readingProgress = 0; state.restoringProgress = false;
+      renderHome();
+      applySettings();
+      document.getElementById('fileName').textContent = '轻阅';
+      document.getElementById('status').textContent = '最近打开的文件';
+      document.getElementById('homeButton').textContent = '导入';
+      document.getElementById('homeButton').setAttribute('aria-label', '导入文件');
+      document.getElementById('homeButton').onclick = openTextFile;
+      document.getElementById('displayButton').textContent = '显示';
+      document.getElementById('displayButton').setAttribute('aria-label', '显示设置');
+      document.getElementById('notesButton').disabled = true;
+      document.getElementById('notesButton').textContent = '批注 0';
+      document.getElementById('exportButton').disabled = true;
+      document.getElementById('exportButton').textContent = '导出原格式';
+      document.getElementById('selectionBar').hidden = true;
+      document.getElementById('tocButton').hidden = true;
+      updateDocxZoomUi();
+      bridge('clearDocumentState');
+      bridge('getRecentFiles');
+      reader.scrollTop = 0;
+    };
+
+    function validNote(note) {
+      return note && Number.isInteger(note.start) && Number.isInteger(note.end)
+        && note.start >= 0 && note.end > note.start && note.end <= state.text.length
+        && typeof note.note === 'string' && note.note.trim();
+    }
+
+    function normalizeNotes(notes) {
+      const usedIds = new Set();
+      return (Array.isArray(notes) ? notes : [])
+        .filter(validNote)
+        .map(note => {
+          let id = note.id == null ? '' : String(note.id);
+          if (!id || usedIds.has(id)) id = newId('note');
+          usedIds.add(id);
+          const quote = typeof note.quote === 'string' && note.quote
+            ? note.quote : state.text.slice(note.start, note.end);
+          return { ...note, id, quote, global: Boolean(note.global) };
+        })
+        .sort((a, b) => a.start - b.start);
+    }
+
+    function isAsciiWordChar(value) {
+      return typeof value === 'string' && /^[A-Za-z0-9_]$/.test(value);
+    }
+
+    function isWholeExactMatch(text, value, start) {
+      if (text.slice(start, start + value.length) !== value) return false;
+      const before = text[start - 1] || '';
+      const after = text[start + value.length] || '';
+      // Keep fields such as RAG and GraphRAG independent. Chinese punctuation and
+      // other non-ASCII characters remain valid boundaries.
+      return !(isAsciiWordChar(value[0]) && isAsciiWordChar(before))
+        && !(isAsciiWordChar(value[value.length - 1]) && isAsciiWordChar(after));
+    }
+
+    // Global annotations match the plain document text, case-sensitively, while
+    // ignoring DOCX font/style boundaries. Embedded ASCII words are not matches.
+    function exactTextRanges(quote) {
+      const text = String(state.text || '');
+      const value = typeof quote === 'string' ? quote : String(quote || '');
+      if (!text || !value) return [];
+      const ranges = [];
+      let from = 0;
+      while (from <= text.length - value.length) {
+        const start = text.indexOf(value, from);
+        if (start < 0) break;
+        if (isWholeExactMatch(text, value, start)) {
+          ranges.push({ start, end: start + value.length });
+        }
+        // Non-overlapping occurrences are the only form the current renderer can
+        // represent without nested/ambiguous highlights.
+        from = start + value.length;
+      }
+      return ranges;
+    }
+
+    function annotationRanges(note) {
+      if (!note) return [];
+      if (note.global) {
+        const matches = exactTextRanges(note.quote);
+        if (matches.length) return matches;
+        // Do not resurrect a legacy global range that is now only an embedded
+        // fragment (for example RAG inside GraphRAG).
+        if (typeof note.quote === 'string' && Number.isInteger(note.start)
+            && isWholeExactMatch(state.text, note.quote, note.start)) {
+          return [{ start: note.start, end: note.start + note.quote.length }];
+        }
+        return [];
+      }
+      return Number.isInteger(note.start) && Number.isInteger(note.end) && note.end > note.start
+        ? [{ start: note.start, end: note.end }] : [];
+    }
+
+    function annotationCount(notes = state.notes) {
+      return (Array.isArray(notes) ? notes : [])
+        .reduce((count, note) => count + annotationRanges(note).length, 0);
+    }
+
+    function rangesOverlap(left, right) {
+      return left.start < right.end && right.start < left.end;
+    }
+
+    function annotationConflict(ranges, ignoredNote = null) {
+      return state.notes.some(note => note !== ignoredNote && annotationRanges(note).some(existing =>
+        ranges.some(candidate => rangesOverlap(candidate, existing))));
+    }
+
+    function annotationQuote(note) {
+      return typeof note?.quote === 'string' && note.quote
+        ? note.quote
+        : Number.isInteger(note?.start) && Number.isInteger(note?.end)
+          ? state.text.slice(note.start, note.end) : '';
+    }
+
+    function removeConflictingAnnotations(ranges, quote, ignoredNote = null) {
+      const conflicts = state.notes.filter(note => note !== ignoredNote
+        && annotationQuote(note) === quote
+        && annotationRanges(note).some(existing => ranges.some(candidate => rangesOverlap(candidate, existing))));
+      if (!conflicts.length) return 0;
+      const conflictSet = new Set(conflicts);
+      state.notes = state.notes.filter(note => !conflictSet.has(note));
+      return conflicts.length;
+    }
+
+    function createAnnotation(anchor, noteText, global = false) {
+      const quote = typeof anchor?.quote === 'string' ? anchor.quote : '';
+      const body = String(noteText || '').trim();
+      const start = Number(anchor?.start);
+      const end = Number(anchor?.end);
+      if (!body) return { error: '请输入批注内容' };
+      if (!quote || !Number.isInteger(start) || !Number.isInteger(end) || end <= start) {
+        return { error: '选区已失效，请重新选择文字' };
+      }
+
+      let selectedRange = { start, end };
+      if (state.text.slice(start, end) !== quote) {
+        // Keep the selected occurrence when offsets came from a styled DOCX node;
+        // fall back to the first exact occurrence only if the old offset no longer fits.
+        const nearby = state.text.indexOf(quote, Math.max(0, start));
+        const first = nearby >= 0 ? nearby : state.text.indexOf(quote);
+        if (first < 0) return { error: '全文中未找到大小写完全一致的内容' };
+        selectedRange = { start: first, end: first + quote.length };
+      }
+
+      const ranges = global ? exactTextRanges(quote) : [selectedRange];
+      if (!ranges.length) return { error: '全文中未找到大小写完全一致的内容' };
+      if (!global && annotationConflict(ranges)) {
+        return { error: '第一版暂不支持重叠批注' };
+      }
+
+      const overwritten = global ? removeConflictingAnnotations(ranges, quote) : 0;
+
+      const anchorRange = global
+        ? ranges.find(range => range.start === selectedRange.start) || ranges[0]
+        : selectedRange;
+      state.notes.push({
+        id: newId('note'), start: anchorRange.start, end: anchorRange.end, quote,
+        note: body.slice(0, 2000), createdAt: Date.now(), global: Boolean(global)
+      });
+      state.notes.sort((left, right) => left.start - right.start);
+      persistNotes();
+      return { count: ranges.length, overwritten };
+    }
+
+    function renderDocument() {
+      doc.classList.remove('empty');
+      doc.replaceChildren();
+      doc.classList.toggle('docx', state.format === 'DOCX');
+      doc.classList.toggle('txt', state.format !== 'DOCX');
+      if (state.format === 'DOCX' && state.html) doc.innerHTML = state.html;
+      else if (state.format === 'TXT') renderTxtDocument();
+      else doc.append(document.createTextNode(state.text));
+      state.notes.forEach(wrapAnnotation);
+      updateNoteCount();
+    }
+
+    function restoreReadingProgress(raw) {
+      const ratio = Number(raw);
+      state.readingProgress = Number.isFinite(ratio) ? Math.max(0, Math.min(1, ratio)) : 0;
+      state.restoringProgress = true;
+      const sequence = ++restoreSequence;
+      clearTimeout(restoreTimer);
+      restoreTimer = 0;
+      setReaderScrollTop(0);
+      if (!state.readingProgress) {
+        requestAnimationFrame(() => {
+          if (sequence === restoreSequence) state.restoringProgress = false;
+        });
+        return;
+      }
+      // TXT chapters use content-visibility, so scrollHeight can grow as the target
+      // region is laid out. Re-apply the ratio until the height is stable.
+      const started = performance.now();
+      const settle = () => {
+        if (sequence !== restoreSequence || !state.title) return;
+        const maxScroll = Math.max(0, reader.scrollHeight - reader.clientHeight);
+        setReaderScrollTop(Math.round(maxScroll * state.readingProgress));
+        // Keep a bounded settling window: skipped chapters can expand after the
+        // first scrollHeight read even when the height looked stable for a frame.
+        if (performance.now() - started >= 2000) {
+          state.restoringProgress = false;
+          restoreTimer = 0;
+        } else {
+          restoreTimer = setTimeout(settle, 50);
+        }
+      };
+      settle();
+    }
+
+    function cancelProgressRestore() {
+      restoreSequence++;
+      clearTimeout(restoreTimer);
+      restoreTimer = 0;
+      state.restoringProgress = false;
+    }
+
+    function readingProgressRatio() {
+      const maxScroll = Math.max(0, reader.scrollHeight - reader.clientHeight);
+      return maxScroll ? Math.max(0, Math.min(1, reader.scrollTop / maxScroll)) : 0;
+    }
+
+    function persistReadingProgress(immediate = false) {
+      if (!state.title || state.restoringProgress) return;
+      const save = () => {
+        progressTimer = 0;
+        if (state.title && !state.restoringProgress) {
+          state.readingProgress = readingProgressRatio();
+          bridge('saveReadingProgress', String(state.readingProgress));
+        }
+      };
+      clearTimeout(progressTimer);
+      if (immediate) save();
+      else progressTimer = setTimeout(save, 250);
+    }
+
+    window.flushReadingProgress = () => {
+      cancelProgressRestore();
+      persistReadingProgress(true);
+    };
+
+    function wrapAnnotation(note) {
+      const ranges = annotationRanges(note);
+      ranges.forEach(range => wrapAnnotationRange(note, range));
+    }
+
+    function wrapAnnotationRange(note, range) {
+      const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      let cursor = 0;
+      for (const node of nodes) {
+        // Keep the original length: surroundContents() splits the node in place.
+        const nodeLength = node.data.length;
+        const start = Math.max(0, range.start - cursor);
+        const end = Math.min(nodeLength, range.end - cursor);
+        if (end > start) {
+          const domRange = document.createRange();
+          domRange.setStart(node, start); domRange.setEnd(node, end);
+          const mark = document.createElement('mark');
+          mark.className = state.editing ? 'annotation editing' : 'annotation'; mark.dataset.id = note.id;
+          if (!state.editing) {
+            mark.setAttribute('role', 'button');
+            mark.title = note.global ? '点击编辑全局批注' : '点击编辑批注';
+            mark.addEventListener('click', event => {
+              event.stopPropagation();
+              editNote(note.id);
+            });
+            mark.addEventListener('pointerup', event => {
+              const selection = window.getSelection();
+              if (selection && !selection.isCollapsed && selection.toString()) return;
+              annotationTapGuardUntil = performance.now() + 500;
+              event.stopPropagation();
+              // Let the browser finish its synthetic click before adding the sheet;
+              // otherwise that click can land on the newly opened backdrop and close it.
+              setTimeout(() => {
+                if (document.getElementById('noteEditor').hidden) editNote(note.id);
+                setTimeout(() => { annotationTapGuardUntil = 0; }, 500);
+              }, 0);
+            });
+            mark.addEventListener('keydown', event => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              editNote(note.id);
+            });
+          }
+          domRange.surroundContents(mark);
+        }
+        cursor += nodeLength;
+        if (cursor >= range.end) break;
+      }
+    }
+
+    document.addEventListener('selectionchange', () => {
+      if (state.editing) {
+        state.selection = null;
+        document.getElementById('selectionBar').hidden = true;
+        return;
+      }
+      const selection = getDocumentSelection();
+      state.selection = selection;
+      const bar = document.getElementById('selectionBar');
+      bar.hidden = !selection;
+      const noteButton = document.getElementById('selectionNoteButton');
+      if (noteButton) noteButton.textContent = noteForSelection(selection) ? '编辑批注' : '批注';
+      if (selection) requestAnimationFrame(positionSelectionBar);
+    });
+
+    function positionSelectionBar() {
+      const bar = document.getElementById('selectionBar');
+      if (bar.hidden || !state.selection) return;
+      const nativeSelection = window.getSelection();
+      if (!nativeSelection || nativeSelection.rangeCount === 0) return;
+      const rect = nativeSelection.getRangeAt(0).getBoundingClientRect();
+      if (!rect.width && !rect.height) return;
+      const margin = 8;
+      const width = bar.offsetWidth;
+      const height = bar.offsetHeight;
+      const viewportWidth = document.documentElement.clientWidth;
+      const viewportHeight = window.innerHeight;
+      const safeBottom = document.body.classList.contains('ai-open')
+        ? Math.floor(viewportHeight * .5) : viewportHeight;
+      const center = Math.max(width / 2 + margin,
+        Math.min(viewportWidth - width / 2 - margin, rect.left + rect.width / 2));
+      const above = rect.top - height - margin;
+      const below = rect.bottom + margin;
+      if (above >= margin) {
+        bar.dataset.placement = 'above';
+        bar.style.top = `${rect.top - margin}px`;
+      } else if (below + height <= safeBottom - margin) {
+        bar.dataset.placement = 'below';
+        bar.style.top = `${below}px`;
+      } else {
+        bar.dataset.placement = 'above';
+        bar.style.top = `${Math.max(height + margin, safeBottom - margin)}px`;
+      }
+      bar.style.left = `${center}px`;
+    }
+
+    reader.addEventListener('scroll', () => {
+      if (!document.getElementById('selectionBar').hidden) requestAnimationFrame(positionSelectionBar);
+      persistReadingProgress();
+    }, { passive: true });
+    reader.addEventListener('wheel', () => {
+      if (state.restoringProgress) cancelProgressRestore();
+    }, { passive: true });
+    reader.addEventListener('touchstart', () => {
+      if (state.restoringProgress) cancelProgressRestore();
+    }, { passive: true });
+    window.addEventListener('resize', positionSelectionBar);
+
+    function getDocumentSelection() {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
+      const range = selection.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer)) return null;
+      const beforeStart = document.createRange();
+      beforeStart.selectNodeContents(doc);
+      beforeStart.setEnd(range.startContainer, range.startOffset);
+      const beforeEnd = document.createRange();
+      beforeEnd.selectNodeContents(doc);
+      beforeEnd.setEnd(range.endContainer, range.endOffset);
+      const start = beforeStart.toString().length;
+      const end = beforeEnd.toString().length;
+      return end > start ? { start, end, quote: state.text.slice(start, end) } : null;
+    }
+
+    function noteForSelection(selection) {
+      if (!selection) return null;
+      return state.notes.find(note => annotationRanges(note).some(range =>
+        selection.start >= range.start && selection.end <= range.end)) || null;
+    }
+
+    function newNote() {
+      if (!state.selection) return;
+      const existing = noteForSelection(state.selection);
+      if (existing) return editNote(existing.id);
+      state.draftSelection = { ...state.selection };
+      state.editingId = null;
+      document.getElementById('noteTitle').textContent = '添加批注';
+      document.getElementById('noteText').value = '';
+      const globalToggle = document.getElementById('globalNote');
+      globalToggle.checked = false;
+      globalToggle.disabled = false;
+      document.getElementById('deleteNoteButton').hidden = true;
+      openSheet('noteEditor');
+      setTimeout(() => document.getElementById('noteText').focus(), 80);
+    }
+
+    function saveNote() {
+      const noteText = document.getElementById('noteText').value.trim();
+      if (!noteText) return showToast('请输入批注内容');
+      if (state.editingId !== null) {
+        const note = state.notes.find(item => String(item.id) === String(state.editingId));
+        if (!note) return showToast('批注已失效，请重新选择文字');
+        const wasGlobal = Boolean(note.global);
+        const nextGlobal = document.getElementById('globalNote').checked;
+        let globalCount = 0;
+        let overwritten = 0;
+        if (nextGlobal) {
+          const quote = state.text.slice(note.start, note.end);
+          const ranges = exactTextRanges(quote);
+          if (!ranges.length) return showToast('全文中未找到大小写完全一致的内容');
+          const anchorRange = ranges.find(range => range.start === note.start) || ranges[0];
+          note.quote = quote;
+          note.start = anchorRange.start;
+          note.end = anchorRange.end;
+          note.global = true;
+          globalCount = ranges.length;
+          // A global annotation replaces only annotations for the same exact quote;
+          // different phrases may share characters without deleting each other.
+          overwritten = removeConflictingAnnotations(ranges, quote, note);
+        } else if (wasGlobal) {
+          const range = { start: note.start, end: note.end };
+          if (annotationConflict([range], note)) {
+            return showToast('当前范围与其他批注重叠');
+          }
+          note.quote = state.text.slice(range.start, range.end);
+          note.start = range.start;
+          note.end = range.end;
+          note.global = false;
+        }
+        note.note = noteText;
+        persistNotes();
+        closeSheet('noteEditor');
+        state.editingId = null;
+        window.getSelection()?.removeAllRanges();
+        state.selection = null;
+        state.draftSelection = null;
+        renderDocument();
+        showToast(note.global
+          ? `全局批注已更新（${globalCount} 处${overwritten ? `，覆盖 ${overwritten} 条已有批注` : ''}）`
+          : '批注已保存');
+        return;
+      } else if (state.draftSelection) {
+        const global = document.getElementById('globalNote').checked;
+        const result = createAnnotation(state.draftSelection, noteText, global);
+        if (result.error) return showToast(result.error);
+        closeSheet('noteEditor');
+        state.editingId = null;
+        window.getSelection()?.removeAllRanges();
+        state.selection = null;
+        state.draftSelection = null;
+        renderDocument();
+        const overwritten = result.overwritten ? `，覆盖 ${result.overwritten} 条已有批注` : '';
+        showToast(global ? `全局批注已保存（${result.count} 处${overwritten}）` : '批注已保存');
+        return;
+      } else return showToast('选区已失效，请重新选择文字');
+    }
+
+    function editNote(id) {
+      const note = state.notes.find(item => String(item.id) === String(id));
+      if (!note) return;
+      state.editingId = note.id;
+      state.draftSelection = null;
+      window.getSelection()?.removeAllRanges();
+      state.selection = null;
+      document.getElementById('selectionBar').hidden = true;
+      document.getElementById('noteTitle').textContent = note.global ? '编辑全局批注' : '编辑批注';
+      document.getElementById('noteText').value = note.note;
+      const globalToggle = document.getElementById('globalNote');
+      globalToggle.checked = Boolean(note.global);
+      globalToggle.disabled = false;
+      document.getElementById('deleteNoteButton').hidden = false;
+      closeSheet('notesSheet');
+      openSheet('noteEditor');
+      const editor = document.getElementById('noteText');
+      editor.focus();
+      editor.setSelectionRange(editor.value.length, editor.value.length);
+      setTimeout(() => {
+        if (!document.getElementById('noteEditor').hidden) {
+          editor.focus();
+          editor.setSelectionRange(editor.value.length, editor.value.length);
+        }
+      }, 80);
+    }
+
+    function deleteNoteRecord(id) {
+      const before = state.notes.length;
+      state.notes = state.notes.filter(note => String(note.id) !== String(id));
+      if (state.notes.length === before) return false;
+      persistNotes();
+      renderDocument();
+      return true;
+    }
+
+    function deleteEditingNote() {
+      const id = state.editingId;
+      if (id === null) return;
+      if (!confirm('删除这条批注？')) return;
+      const deleted = deleteNoteRecord(id);
+      closeSheet('noteEditor');
+      state.editingId = null;
+      state.selection = null;
+      state.draftSelection = null;
+      window.getSelection()?.removeAllRanges();
+      document.getElementById('deleteNoteButton').hidden = true;
+      showToast(deleted ? '批注已删除' : '批注已失效');
+    }
+
+    function removeNote(id) {
+      if (!confirm('删除这条批注？')) return;
+      if (deleteNoteRecord(id)) {
+        showNotes();
+        showToast('批注已删除');
+      }
+    }
+
+    function persistNotes() {
+      bridge('saveAnnotations', JSON.stringify({ notes: state.notes, noteCount: annotationCount() }));
+      updateNoteCount();
+    }
+
+    function syncAnnotationCount() {
+      if (state.notes.length && annotationCount() !== state.notes.length) persistNotes();
+    }
+
+    function updateNoteCount() {
+      document.getElementById('notesButton').textContent = `批注 ${annotationCount()}`;
+    }
+
+    function showNotes() {
+      if (!state.text) return;
+      const list = document.getElementById('notesList');
+      list.replaceChildren();
+      if (!state.notes.length) {
+        const empty = document.createElement('p');
+        empty.textContent = '还没有批注。选中文字后点击“添加批注”。';
+        empty.style.color = 'var(--muted)';
+        list.append(empty);
+      }
+      state.notes.forEach(note => {
+        const item = document.createElement('article');
+        item.className = 'note-item';
+        const quote = document.createElement('blockquote');
+        const places = annotationRanges(note).length;
+        quote.textContent = `“${state.text.slice(note.start, note.end)}”`
+          + (note.global ? `（全局 · ${places} 处）` : '');
+        const text = document.createElement('p');
+        text.textContent = note.note;
+        const row = document.createElement('div');
+        row.className = 'row';
+        [['跳转', () => jumpToNote(note.id)], ['编辑', () => editNote(note.id)], ['删除', () => removeNote(note.id)]].forEach(([label, action]) => {
+          const button = document.createElement('button');
+          button.type = 'button'; button.textContent = label; button.onclick = action; row.append(button);
+        });
+        item.append(quote, text, row); list.append(item);
+      });
+      openSheet('notesSheet');
+    }
+
+    function jumpToNote(id) {
+      closeSheet('notesSheet');
+      renderDocument();
+      const mark = doc.querySelector(`mark[data-id="${CSS.escape(id)}"]`);
+      mark?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function toggleSearch(open) {
+      document.getElementById('searchBar').hidden = !open;
+      if (open) setTimeout(() => searchInput.focus(), 50);
+      else { searchInput.value = ''; clearSearch(); }
+    }
+
+    searchInput.addEventListener('input', () => runSearch(searchInput.value));
+    searchInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') { event.preventDefault(); moveSearch(event.shiftKey ? -1 : 1); }
+      if (event.key === 'Escape') toggleSearch(false);
+    });
+
+    function clearSearch() {
+      doc.querySelectorAll('.search-hit').forEach(hit => hit.replaceWith(document.createTextNode(hit.textContent)));
+      doc.normalize();
+      state.hits = []; state.hitIndex = -1;
+      document.getElementById('searchCount').textContent = '0/0';
+    }
+
+    function runSearch(rawQuery) {
+      clearSearch();
+      const query = rawQuery.trim().toLocaleLowerCase();
+      if (!query || !state.text) return;
+      const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach(node => {
+        const source = node.data;
+        const lower = source.toLocaleLowerCase();
+        let cursor = 0, index = lower.indexOf(query);
+        if (index < 0) return;
+        const fragment = document.createDocumentFragment();
+        while (index >= 0) {
+          fragment.append(document.createTextNode(source.slice(cursor, index)));
+          const hit = document.createElement('span');
+          hit.className = 'search-hit';
+          hit.textContent = source.slice(index, index + query.length);
+          fragment.append(hit);
+          cursor = index + query.length;
+          index = lower.indexOf(query, cursor);
+        }
+        fragment.append(document.createTextNode(source.slice(cursor)));
+        node.replaceWith(fragment);
+      });
+      state.hits = [...doc.querySelectorAll('.search-hit')];
+      state.hitIndex = state.hits.length ? 0 : -1;
+      updateSearchHit();
+    }
+
+    function moveSearch(delta) {
+      if (!state.hits.length) return;
+      state.hitIndex = (state.hitIndex + delta + state.hits.length) % state.hits.length;
+      updateSearchHit();
+    }
+
+    function updateSearchHit() {
+      state.hits.forEach((hit, index) => hit.classList.toggle('active', index === state.hitIndex));
+      document.getElementById('searchCount').textContent = state.hits.length ? `${state.hitIndex + 1}/${state.hits.length}` : '0/0';
+      state.hits[state.hitIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // --- Edited-DOCX export: serialize the saved DOM back into style blocks that
+    // DocxStyledExporter turns into WordprocessingML inside the original package. ---
+
+    function pxToTwips(value) {
+      if (!value || !value.endsWith('px')) return 0;
+      const px = parseFloat(value);
+      return Number.isFinite(px) && px > 0 ? Math.round(px * 15) : 0;
+    }
+
+    function cssHex(value) {
+      if (!value) return '';
+      const hex = /^#([0-9a-f]{6})$/i.exec(value);
+      if (hex) return hex[1].toUpperCase();
+      const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(value);
+      if (!rgb) return '';
+      return [1, 2, 3].map(i => Number(rgb[i]).toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+
+    function mergeRunStyle(base, el) {
+      const style = el.style;
+      const merged = { ...base };
+      if (!style) return merged;
+      if (style.fontWeight) merged.b = style.fontWeight === 'bold' || Number(style.fontWeight) >= 600;
+      if (style.fontStyle) merged.i = style.fontStyle === 'italic';
+      const deco = style.textDecorationLine || style.textDecoration;
+      if (deco) merged.u = deco.includes('underline');
+      const color = cssHex(style.color);
+      if (color) merged.color = color;
+      const fill = cssHex(style.backgroundColor);
+      if (fill) merged.fill = fill;
+      if (style.fontSize && style.fontSize.endsWith('px')) {
+        const px = parseFloat(style.fontSize);
+        if (Number.isFinite(px) && px > 0) merged.sz = Math.max(2, Math.round(px / 1.3333 * 2));
+      }
+      if (style.verticalAlign === 'super') merged.va = 'superscript';
+      else if (style.verticalAlign === 'sub') merged.va = 'subscript';
+      return merged;
+    }
+
+    function collectDocxRuns(el, inherited, runs) {
+      for (let node = el.firstChild; node; node = node.nextSibling) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (node.data) runs.push({ ...inherited, t: node.data });
+          continue;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) continue;
+        if (node.classList.contains('docx-page-break')) { runs.push({ pb: true }); continue; }
+        collectDocxRuns(node, mergeRunStyle(inherited, node), runs);
+      }
+    }
+
+    function docxParagraphBlock(el) {
+      const block = { type: 'p', runs: [] };
+      const styleName = el.getAttribute('data-style');
+      if (styleName) block.style = styleName;
+      const num = el.getAttribute('data-num');
+      if (num && /^\d{1,2}:\d{1,6}$/.test(num)) block.num = num;
+      const style = el.style;
+      if (style) {
+        if (style.textAlign) block.jc = style.textAlign === 'justify' ? 'both' : style.textAlign;
+        const indLeft = pxToTwips(style.marginLeft); if (indLeft) block.indLeft = indLeft;
+        const indRight = pxToTwips(style.marginRight); if (indRight) block.indRight = indRight;
+        const spBefore = pxToTwips(style.marginTop); if (spBefore) block.spBefore = spBefore;
+        const spAfter = pxToTwips(style.marginBottom); if (spAfter) block.spAfter = spAfter;
+        const fill = cssHex(style.backgroundColor); if (fill) block.fill = fill;
+      }
+      const inline = !DOCX_BLOCK_TAGS.has(el.tagName);
+      collectDocxRuns(el, inline ? mergeRunStyle({}, el) : {}, block.runs);
+      return block;
+    }
+
+    function docxTableBlock(el) {
+      const rows = [];
+      el.querySelectorAll(':scope > thead > tr, :scope > tbody > tr, :scope > tfoot > tr, :scope > tr')
+        .forEach(tr => {
+          const cells = [];
+          tr.querySelectorAll(':scope > td, :scope > th').forEach(td => {
+            const cell = { blocks: [] };
+            const fill = cssHex(td.style.backgroundColor);
+            if (fill) cell.fill = fill;
+            serializeDocxBlocks(td, cell.blocks);
+            cells.push(cell);
+          });
+          if (cells.length) rows.push(cells);
+        });
+      return { type: 'table', rows };
+    }
+
+    function serializeDocxBlocks(root, out) {
+      for (let node = root.firstChild; node; node = node.nextSibling) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (node.data.trim()) out.push({ type: 'p', runs: [{ t: node.data }] });
+          continue;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) continue;
+        if (node.tagName === 'TABLE') out.push(docxTableBlock(node));
+        else out.push(docxParagraphBlock(node));
+      }
+      return out;
+    }
+
+    function docxExportBlocks() {
+      const template = document.createElement('template');
+      template.innerHTML = state.html;
+      return serializeDocxBlocks(template.content, []);
+    }
+
+    function exportDocument() {
+      if (!state.text || state.editing) return;
+      if (state.format === 'DOCX' && state.edited && state.html) {
+        bridge('exportDocument', JSON.stringify(docxExportBlocks()));
+      } else {
+        bridge('exportDocument', '');
+      }
+    }
+
+    (() => {
+      const resetButton = document.getElementById('docxZoomReset');
+      let pressTimer = 0;
+      let longPressed = false;
+      let startX = 0;
+      let startY = 0;
+      const openTheme = () => {
+        longPressed = true;
+        openSheet('docxThemeSheet');
+        if (navigator.vibrate) navigator.vibrate(20);
+      };
+      resetButton.addEventListener('pointerdown', event => {
+        longPressed = false;
+        startX = event.clientX; startY = event.clientY;
+        clearTimeout(pressTimer);
+        pressTimer = setTimeout(openTheme, 550);
+      });
+      resetButton.addEventListener('pointermove', event => {
+        if (Math.hypot(event.clientX - startX, event.clientY - startY) > 12) clearTimeout(pressTimer);
+      });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(type =>
+        resetButton.addEventListener(type, () => clearTimeout(pressTimer)));
+      resetButton.addEventListener('contextmenu', event => {
+        event.preventDefault();
+        clearTimeout(pressTimer);
+        if (!longPressed) openTheme();
+      });
+      resetButton.addEventListener('click', () => {
+        if (longPressed) { longPressed = false; return; }
+        resetDocZoom();
+      });
+    })();
+
+    function openSheet(id) { document.getElementById(id).hidden = false; }
+    function closeSheet(id) { if (id === 'aiSheet') closeAiChat(); else document.getElementById(id).hidden = true; }
+    function backdropClose(event) {
+      if (event.target !== event.currentTarget) return;
+      if (performance.now() < annotationTapGuardUntil) {
+        annotationTapGuardUntil = 0;
+        return;
+      }
+      event.currentTarget.hidden = true;
+    }
+
+    function storageGet(key, fallback = '') {
+      try { return localStorage.getItem(key) || fallback; } catch (_) { return fallback; }
+    }
+
+    function storageSet(key, value) {
+      try { localStorage.setItem(key, value); } catch (_) { /* WebView storage can be disabled. */ }
+    }
+
+    function applySettings() {
+      const size = Math.max(15, Math.min(30, Number(document.getElementById('fontSize').value) || 19));
+      const line = Math.max(1.35, Math.min(2.4, Number(document.getElementById('lineHeight').value) || 1.85));
+      const spacing = Math.max(0, Math.min(2, Number(document.getElementById('paragraphSpacing').value) || 0));
+      const ratio = state.title && !state.loading && !state.restoringProgress ? readingProgressRatio() : null;
+      document.documentElement.style.setProperty('--font-size', `${size}px`);
+      document.documentElement.style.setProperty('--line-height', String(line));
+      document.documentElement.style.setProperty('--paragraph-spacing', `${spacing}em`);
+      document.getElementById('fontSizeValue').textContent = `${size}px`;
+      document.getElementById('lineHeightValue').textContent = line.toFixed(2);
+      document.getElementById('paragraphSpacingValue').textContent = `${spacing.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}em`;
+      // Inline TXT values make the controls effective even on WebViews that cache custom
+      // properties while a large text node is being reflowed.
+      if (state.format === 'TXT' && state.title) {
+        doc.style.fontSize = `${size}px`;
+        doc.style.lineHeight = String(line);
+      } else {
+        doc.style.removeProperty('font-size');
+        doc.style.removeProperty('line-height');
+      }
+      storageSet('reader-font-size', String(size));
+      storageSet('reader-line-height', String(line));
+      storageSet('reader-paragraph-spacing', String(spacing));
+      if (ratio !== null) requestAnimationFrame(() => {
+        const maxScroll = Math.max(0, reader.scrollHeight - reader.clientHeight);
+        setReaderScrollTop(Math.round(maxScroll * ratio));
+      });
+    }
+
+    function resetSettings() {
+      document.getElementById('fontSize').value = '19';
+      document.getElementById('lineHeight').value = '1.85';
+      document.getElementById('paragraphSpacing').value = '0.85';
+      applySettings(); setTheme('light');
+      showToast('阅读设置已恢复默认');
+    }
+
+    function setTheme(theme) {
+      const dark = theme === 'dark';
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      document.getElementById('lightTheme').classList.toggle('active', !dark);
+      document.getElementById('darkTheme').classList.toggle('active', dark);
+      document.getElementById('docxLightTheme').classList.toggle('active', !dark);
+      document.getElementById('docxDarkTheme').classList.toggle('active', dark);
+      storageSet('reader-theme', theme);
+      bridge('setDarkMode', dark);
+    }
+
+    function restoreSettings() {
+      document.getElementById('fontSize').value = storageGet('reader-font-size', '19');
+      document.getElementById('lineHeight').value = storageGet('reader-line-height', '1.85');
+      document.getElementById('paragraphSpacing').value = storageGet('reader-paragraph-spacing', '0.85');
+      applySettings();
+      setTheme(storageGet('reader-theme', 'light'));
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message; toast.classList.add('show');
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    document.getElementById('aiPrompt').addEventListener('keydown', event => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); sendAi(); }
+    });
+    document.getElementById('aiPagePrompt').addEventListener('keydown', event => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); sendAiPage(); }
+    });
+
+    restoreSettings();
+    renderHome();
+    bridge('getRecentFiles');
+    bridge('getAiState');
+  </script>
+</body>
+</html>

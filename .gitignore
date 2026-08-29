@@ -1,0 +1,15 @@
+.gradle/
+.idea/
+local.properties
+**/build/
+*.iml
+.DS_Store
+
+# Local signing material and generated packages must never enter Git.
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.apk
+*.aab
