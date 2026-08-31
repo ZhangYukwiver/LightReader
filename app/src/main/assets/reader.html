@@ -2018,14 +2018,16 @@
       closeSheet('notesSheet');
       openSheet('noteEditor');
       const editor = document.getElementById('noteText');
-      editor.focus();
-      editor.setSelectionRange(editor.value.length, editor.value.length);
-      setTimeout(() => {
-        if (!document.getElementById('noteEditor').hidden) {
-          editor.focus();
-          editor.setSelectionRange(editor.value.length, editor.value.length);
-        }
-      }, 80);
+      const focusEditorAtTop = () => {
+        if (document.getElementById('noteEditor').hidden) return;
+        editor.focus();
+        // Existing annotations can span many lines. Start at the beginning so
+        // opening a note always shows its first line instead of the last one.
+        editor.setSelectionRange(0, 0);
+        editor.scrollTop = 0;
+      };
+      focusEditorAtTop();
+      setTimeout(focusEditorAtTop, 80);
     }
 
     function deleteNoteRecord(id) {
