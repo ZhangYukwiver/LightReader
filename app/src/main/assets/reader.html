@@ -23,6 +23,7 @@
       --line-height: 1.85;
       --paragraph-spacing: .85em;
       --doc-zoom: 1;
+      --ai-dock-height: 50vh;
     }
     :root[data-theme="dark"] {
       color-scheme: dark;
@@ -85,7 +86,8 @@
     #searchInput:focus { border-color: var(--accent); }
     #searchCount { min-width: 48px; color: var(--muted); text-align: center; font-size: 13px; }
     #reader { grid-row: 3; min-height: 0; overflow: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
-    body.ai-open #reader { scroll-padding-bottom: 50vh; }
+    body.ai-open #reader,
+    body.ai-page-open #reader { scroll-padding-bottom: var(--ai-dock-height); }
     #document {
       min-height: 100%; max-width: 760px; margin: 0 auto;
       padding: 34px 24px 120px;
@@ -236,17 +238,29 @@
     .check-row input { accent-color: var(--accent); }
     .ai-dock {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
-      height: 50vh; min-height: 260px; padding-top: 8px;
+      height: var(--ai-dock-height); min-height: 260px; max-height: 90vh; padding-top: 8px;
       border-top: 1px solid var(--line); background: var(--paper);
       box-shadow: 0 -10px 34px #0004;
     }
     .ai-dock[hidden] { display: none; }
     .ai-dock .sheet { width: 100%; height: 100%; max-height: none; border-radius: 18px 18px 0 0; }
+    .ai-resize-handle {
+      position: absolute; top: 0; left: 50%; z-index: 2;
+      width: 96px; height: 24px; padding: 9px 12px 10px;
+      transform: translateX(-50%); border: 0; border-radius: 99px;
+      background: transparent; cursor: ns-resize; touch-action: none;
+    }
+    .ai-resize-handle::after {
+      content: ""; display: block; width: 72px; height: 5px; margin: 0 auto;
+      border-radius: 99px; background: var(--line);
+    }
+    .ai-resize-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+    body.ai-resizing, body.ai-resizing * { cursor: ns-resize !important; user-select: none !important; }
     .ai-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .ai-head h2 { margin-bottom: 0; }
     .ai-head button { min-height: 34px; padding: 0 10px; border-radius: 8px; background: var(--paper); color: var(--accent); font-size: 12px; }
     .ai-context { margin: 0 0 10px; padding: 9px 11px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); font-size: 13px; white-space: pre-wrap; }
-    .ai-messages { min-height: 64px; max-height: calc(50vh - 245px); overflow: auto; padding: 2px 0; }
+    .ai-messages { min-height: 64px; max-height: max(64px, calc(var(--ai-dock-height) - 245px)); overflow: auto; padding: 2px 0; }
     .ai-message { margin: 8px 0; padding: 10px 12px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
     .ai-message.user { margin-left: 16%; background: var(--accent-soft); }
     .ai-message.assistant { margin-right: 8%; background: var(--paper); border: 1px solid var(--line); }
@@ -434,6 +448,7 @@
   </div>
 
   <div id="aiPage" class="ai-dock ai-page" hidden>
+    <div class="ai-resize-handle" role="separator" aria-orientation="horizontal" aria-label="调整 AI 对话窗口高度" tabindex="0"></div>
     <section class="sheet ai-page-panel" role="dialog" aria-modal="false" aria-labelledby="aiPageTitle">
       <div class="ai-page-head">
         <button type="button" aria-label="返回阅读" onclick="closeAiPage()">返回</button>
@@ -458,6 +473,7 @@
   </div>
 
   <div id="aiSheet" class="ai-dock" hidden>
+    <div class="ai-resize-handle" role="separator" aria-orientation="horizontal" aria-label="调整 AI 对话窗口高度" tabindex="0"></div>
     <section class="sheet ai-sheet" role="dialog" aria-modal="false" aria-labelledby="aiTitle">
       <div class="ai-head"><h2 id="aiTitle">AI 助手</h2><button type="button" onclick="closeAiChat()">收起</button></div>
       <p id="aiChannelStatus" class="hint">正在读取 AI 渠道…</p>
@@ -507,7 +523,10 @@
     const doc = document.getElementById('document');
     const reader = document.getElementById('reader');
     const searchInput = document.getElementById('searchInput');
+    const AI_DOCK_MIN_HEIGHT = 260;
+    const AI_DOCK_MAX_RATIO = 0.9;
     let toastTimer, progressTimer, restoreTimer = 0, restoreSequence = 0, annotationTapGuardUntil = 0;
+    let aiDockHeight = null, aiResizeState = null;
 
     function bridge(name, ...args) {
       if (window.ReaderBridge && typeof ReaderBridge[name] === 'function') return ReaderBridge[name](...args);
@@ -703,6 +722,113 @@
 
     function newId(prefix) {
       return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function aiViewportHeight() {
+      return Math.max(1, Number(window.innerHeight) || Number(document.documentElement.clientHeight) || 1);
+    }
+
+    function aiDockBounds() {
+      const viewportHeight = aiViewportHeight();
+      const chromeBottom = [...document.querySelectorAll('header, #searchBar')]
+        .filter(element => !element.hidden)
+        .reduce((bottom, element) => Math.max(bottom, element.getBoundingClientRect().bottom), 0);
+      const min = AI_DOCK_MIN_HEIGHT;
+      const available = Math.max(0, viewportHeight - chromeBottom);
+      const max = Math.max(min, Math.min(
+        Math.floor(viewportHeight * AI_DOCK_MAX_RATIO), Math.floor(available)
+      ));
+      return { min, max };
+    }
+
+    function clampAiDockHeight(value) {
+      const { min, max } = aiDockBounds();
+      const fallback = aiViewportHeight() * .5;
+      const numeric = Number(value);
+      return Math.round(Math.min(max, Math.max(min, Number.isFinite(numeric) ? numeric : fallback)));
+    }
+
+    function updateAiResizeHandleValues(value = aiDockHeight) {
+      const { min, max } = aiDockBounds();
+      const current = clampAiDockHeight(value == null ? aiViewportHeight() * .5 : value);
+      document.querySelectorAll('.ai-resize-handle').forEach(handle => {
+        handle.setAttribute('aria-valuemin', String(min));
+        handle.setAttribute('aria-valuemax', String(max));
+        handle.setAttribute('aria-valuenow', String(current));
+        handle.title = `拖动调整 AI 窗口高度（${current}px）`;
+      });
+    }
+
+    function setAiDockHeight(value) {
+      aiDockHeight = clampAiDockHeight(value);
+      document.documentElement.style.setProperty('--ai-dock-height', `${aiDockHeight}px`);
+      updateAiResizeHandleValues(aiDockHeight);
+      return aiDockHeight;
+    }
+
+    function currentAiDockHeight() {
+      if (Number.isFinite(aiDockHeight)) return aiDockHeight;
+      const visiblePanel = [...document.querySelectorAll('.ai-dock')].find(panel => !panel.hidden);
+      const measured = visiblePanel?.getBoundingClientRect().height;
+      return Number.isFinite(measured) && measured > 0 ? measured : aiViewportHeight() * .5;
+    }
+
+    function beginAiResize(event) {
+      if (event.isPrimary === false || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      const handle = event.currentTarget;
+      const panel = handle.closest('.ai-dock');
+      if (!panel || panel.hidden) return;
+      const startHeight = setAiDockHeight(panel.getBoundingClientRect().height);
+      aiResizeState = { handle, pointerId: event.pointerId, startY: event.clientY, startHeight };
+      handle.setPointerCapture?.(event.pointerId);
+      document.body.classList.add('ai-resizing');
+      event.preventDefault();
+    }
+
+    function moveAiResize(event) {
+      if (!aiResizeState || event.isPrimary === false || event.pointerId !== aiResizeState.pointerId) return;
+      setAiDockHeight(aiResizeState.startHeight + aiResizeState.startY - event.clientY);
+      event.preventDefault();
+    }
+
+    function endAiResize(event) {
+      if (!aiResizeState || (event.pointerId != null && event.pointerId !== aiResizeState.pointerId)) return;
+      const active = aiResizeState;
+      aiResizeState = null;
+      document.body.classList.remove('ai-resizing');
+      if (active.handle.hasPointerCapture?.(active.pointerId)) {
+        active.handle.releasePointerCapture(active.pointerId);
+      }
+    }
+
+    function adjustAiDockWithKeyboard(event) {
+      const { min, max } = aiDockBounds();
+      const current = clampAiDockHeight(currentAiDockHeight());
+      const step = event.shiftKey ? 120 : 40;
+      let next;
+      if (event.key === 'ArrowUp') next = current + step;
+      else if (event.key === 'ArrowDown') next = current - step;
+      else if (event.key === 'Home') next = max;
+      else if (event.key === 'End') next = min;
+      else return;
+      event.preventDefault();
+      setAiDockHeight(next);
+    }
+
+    function setupAiResize() {
+      document.querySelectorAll('.ai-resize-handle').forEach(handle => {
+        handle.addEventListener('pointerdown', beginAiResize);
+        handle.addEventListener('keydown', adjustAiDockWithKeyboard);
+      });
+      document.addEventListener('pointermove', moveAiResize, { passive: false });
+      document.addEventListener('pointerup', endAiResize, { passive: false });
+      document.addEventListener('pointercancel', endAiResize, { passive: false });
+      window.addEventListener('blur', () => endAiResize({ pointerId: null }));
+      window.addEventListener('resize', () => {
+        if (Number.isFinite(aiDockHeight)) setAiDockHeight(aiDockHeight);
+        else updateAiResizeHandleValues();
+      });
+      updateAiResizeHandleValues();
     }
 
     function toggleAiPage() {
@@ -2113,6 +2239,8 @@
 
     function toggleSearch(open) {
       document.getElementById('searchBar').hidden = !open;
+      if (Number.isFinite(aiDockHeight)) setAiDockHeight(aiDockHeight);
+      else updateAiResizeHandleValues();
       if (open) setTimeout(() => searchInput.focus(), 50);
       else { searchInput.value = ''; clearSearch(); }
     }
@@ -2409,6 +2537,7 @@
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); sendAiPage(); }
     });
 
+    setupAiResize();
     restoreSettings();
     renderHome();
     bridge('getRecentFiles');
