@@ -113,7 +113,8 @@ public final class AiClient {
 
     private static String systemPrompt() {
         return "你是轻阅中的阅读助手。用用户提问的语言回答，先给结论，再给必要解释。"
-                + "不要编造来源；如果启用了联网搜索，只使用返回的搜索结果并保留引用。";
+                + "不要编造来源；如果启用了联网搜索，只使用返回的搜索结果并保留引用。"
+                + "输出必须是纯文本，不要使用 Markdown 标记（如标题井号、加粗/斜体符号、反引号代码围栏、表格分隔线或链接语法）；需要分点时使用普通换行、数字或圆点。";
     }
 
     private static String transcript(JSONArray history, String prompt) {

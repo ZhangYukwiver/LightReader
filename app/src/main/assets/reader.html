@@ -1130,6 +1130,173 @@
       return `请围绕以下选中文字回答用户问题。选中文字：\n「${quote}」\n\n用户问题：${raw}`;
     }
 
+    function aiPlainText(value) {
+      const source = String(value ?? '').replace(/\r\n?/g, '\n');
+      if (!source) return '';
+      const preserved = [];
+      let tokenPrefix = '\uE000AIPlain';
+      while (source.includes(tokenPrefix)) tokenPrefix += 'x';
+      const preserve = text => {
+        const token = `${tokenPrefix}${preserved.length}\uE001`;
+        preserved.push(text);
+        return token;
+      };
+      const lines = source.split('\n');
+      const withoutFences = [];
+      const openingFence = /^[ \t]{0,3}(`{3,}|~{3,})([^\n]*)$/;
+      for (let index = 0; index < lines.length;) {
+        const opening = lines[index].match(openingFence);
+        if (!opening) { withoutFences.push(lines[index++]); continue; }
+        const marker = opening[1];
+        const markerChar = marker[0];
+        if (opening[2].includes(markerChar)) {
+          // A same-line pair such as ```code``` is inline text, not a block fence.
+          withoutFences.push(lines[index++]);
+          continue;
+        }
+        const markerLength = marker.length;
+        const code = [];
+        index++;
+        const closingFence = new RegExp(`^[ \\t]{0,3}${markerChar}{${markerLength},}[ \\t]*$`);
+        while (index < lines.length) {
+          if (closingFence.test(lines[index])) {
+            index++;
+            break;
+          }
+          code.push(lines[index++]);
+        }
+        // Keep fenced code intact while removing only its opening/closing lines.
+        withoutFences.push(preserve(code.join('\n')));
+      }
+      let plain = withoutFences.join('\n');
+
+      // An escaped backtick is literal text, not the edge of an inline-code span.
+      plain = plain.replace(/\\`/g, () => preserve('`'));
+      // Keep inline code intact. Unmatched backticks are treated as literal text.
+      plain = plain.replace(/(`+)([^`\n]+?)\1/g, (_, ticks, code) => preserve(code));
+      plain = plain.replace(/(~{3,})([^~\n]+?)\1/g, (_, ticks, code) => preserve(code));
+      // Protect escaped Markdown characters before removing formatting markers.
+      plain = plain.replace(/\\([\\`*_\[\]{}()#+.!>|~-])/g, (_, character) => preserve(character));
+
+      // Keep link labels and image alt text; citation buttons still expose URLs.
+      plain = plain.replace(/^[ \t]{0,3}\[([^\]\n]+)\]:[ \t]*\S.*$/gm, '');
+      const stripMarkdownLinks = text => {
+        let result = '';
+        for (let index = 0; index < text.length;) {
+          const image = text[index] === '!' && text[index + 1] === '[';
+          if (!image && text[index] !== '[') { result += text[index++]; continue; }
+          const labelStart = index + (image ? 2 : 1);
+          let cursor = labelStart;
+          let bracketDepth = 0;
+          for (; cursor < text.length; cursor++) {
+            if (text[cursor] === '\\') { cursor++; continue; }
+            if (text[cursor] === '[') bracketDepth++;
+            else if (text[cursor] === ']') {
+              if (bracketDepth === 0) break;
+              bracketDepth--;
+            }
+          }
+          if (cursor >= text.length) { result += text.slice(index); break; }
+          const label = text.slice(labelStart, cursor);
+          const next = cursor + 1;
+          if (text[next] === '(') {
+            let depth = 1;
+            let end = next + 1;
+            for (; end < text.length; end++) {
+              if (text[end] === '\\') { end++; continue; }
+              if (text[end] === '(') depth++;
+              else if (text[end] === ')' && --depth === 0) break;
+            }
+            if (end < text.length) { result += label; index = end + 1; continue; }
+            result += text.slice(index);
+            break;
+          } else if (text[next] === '[') {
+            let end = next + 1;
+            for (; end < text.length; end++) {
+              if (text[end] === '\\') { end++; continue; }
+              if (text[end] === ']') break;
+            }
+            if (end < text.length) { result += label; index = end + 1; continue; }
+            result += text.slice(index);
+            break;
+          }
+          result += text[index++];
+        }
+        return result;
+      };
+      plain = stripMarkdownLinks(plain);
+      plain = plain.replace(/<((?:https?:\/\/|mailto:)[^>\s]+)>/gi, '$1');
+
+      const tableSeparator = line => /^\s*\|?\s*:?-{1,}:?\s*(?:\|\s*:?-{1,}:?\s*)+\|?\s*$/.test(line);
+      // Convert block-level Markdown markers to readable plain-text equivalents.
+      plain = plain.replace(/^[ \t]{0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$/gm, '');
+      plain = plain.replace(/^([ \t]{0,3})#{1,6}[ \t]+(.+?)[ \t]+#{1,6}[ \t]*$/gm, '$1$2');
+      plain = plain.replace(/^[ \t]{0,3}#{1,6}(?:[ \t]+|$)/gm, '');
+      plain = plain.replace(/^([ \t]{0,3})(?:>[ \t]*){2,}(?=\S)/gm, '$1');
+      plain = plain.replace(/^([ \t]{0,3})(?:>[ \t]*)+[ \t]+/gm, '$1');
+      plain = plain.replace(/^[ \t]{0,3}>[ \t]*$/gm, '');
+      plain = plain.replace(/^([ \t]*)[-+*][ \t]+\[([ xX])\][ \t]+/gm,
+        (_, prefix, checked) => `${prefix}${checked.trim() ? '☑' : '☐'} `);
+      plain = plain.replace(/^([ \t]*)[-+*][ \t]+.*$/gm,
+        (line, prefix) => tableSeparator(line) ? line : `${prefix}• ${line.slice(prefix.length).replace(/^[-+*][ \t]+/, '')}`);
+      plain = plain.replace(/^([ \t]*)(\d{1,9})[.)][ \t]+/gm, '$1$2. ');
+      plain = plain.replace(/^[ \t]*(?:=+|-{3,})[ \t]*$/gm, '');
+
+      // Convert only lines that are part of a recognizable Markdown table.
+      const tableLines = plain.split('\n');
+      const tableIndexes = new Set();
+      const tableHeader = line => {
+        const trimmed = line.trim();
+        if (!trimmed.includes('|') || /^https?:\/\//i.test(trimmed)) return false;
+        return trimmed.startsWith('|') || trimmed.endsWith('|') || /\s\|\s/.test(trimmed);
+      };
+      tableLines.forEach((line, index) => {
+        if (!tableSeparator(line) || index === 0 || !tableHeader(tableLines[index - 1])) return;
+        tableIndexes.add(index);
+        tableIndexes.add(index - 1);
+        for (let cursor = index + 1; cursor < tableLines.length && tableLines[cursor].includes('|'); cursor++) tableIndexes.add(cursor);
+      });
+      const tableOutput = [];
+      tableLines.forEach((line, index) => {
+        if (tableIndexes.has(index) && tableSeparator(line)) return;
+        if (!tableIndexes.has(index)) { tableOutput.push(line); return; }
+        const trimmed = line.trim();
+        const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+        tableOutput.push(cells.length < 2 ? line : cells.join('    '));
+      });
+      plain = tableOutput.join('\n');
+
+      // Remove recognizable emphasis/strike delimiters while keeping intraword symbols intact.
+      for (let pass = 0; pass < 4; pass++) {
+        const before = plain;
+        plain = plain.replace(/(^|[^\w*])\*{4,}(?=\S)([^*\n]*?\S)\*{4,}(?![\w*])/g, '$1$2');
+        plain = plain.replace(/(^|[^\w_])_{4,}(?=\S)([^\n]*?\S)_{4,}(?![\w_])/g, '$1$2');
+        plain = plain.replace(/(^|[^\w*])\*\*\*(?=\S)([^*\n]*?\S)\*\*\*(?![\w*])/g, '$1$2');
+        plain = plain.replace(/(^|[^\w_])___(?=\S)([^\n]*?\S)___(?![\w_])/g, '$1$2');
+        plain = plain.replace(/(^|[^\w*])\*\*(?=\S)([^*\n]*?\S)\*\*(?![\w*])/g, '$1$2');
+        plain = plain.replace(/(^|[^\w_])__(?=\S)([^\n]*?\S)__(?![\w_])/g, '$1$2');
+        plain = plain.replace(/(^|[^\w~])~~(?=\S)([^~\n]*?\S)~~(?![\w~])/g, '$1$2');
+        plain = plain.replace(/(^|[^\w*])\*([^\s*](?:[^*\n]*?[^\s*])?)\*(?![\w])/g,
+          (_, prefix, body) => /[\\/]$/.test(prefix) ? `${prefix}*${body}*` : `${prefix}${body}`);
+        plain = plain.replace(/(^|[^\w_])_([^\s_](?:[^_\n]*?[^\s_])?)_(?![A-Za-z0-9])/g,
+          (_, prefix, body) => /[\\/]$/.test(prefix) ? `${prefix}_${body}_` : `${prefix}${body}`);
+        if (plain === before) break;
+      }
+      plain = plain.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+      const tokenPattern = new RegExp(`${tokenPrefix}(\\d+)\\uE001`, 'g');
+      let restored = plain;
+      for (let pass = 0; pass <= preserved.length; pass++) {
+        const next = restored.replace(tokenPattern, (match, index) => preserved[Number(index)] ?? match);
+        if (next === restored) break;
+        restored = next;
+      }
+      return restored;
+    }
+
+    function aiResultText(payload) {
+      return aiPlainText(payload.ok ? String(payload.text || '') : `请求失败：${payload.error || '未知错误'}`);
+    }
+
     function sendAi() {
       const channel = selectedAiChannel();
       if (!channel) { showToast('请先配置 AI 渠道'); openAiSettings(); return; }
@@ -1176,14 +1343,15 @@
     window.onAiResult = function(value) {
       const payload = bridgeJson(value);
       if (!payload.id) return;
+      // Normalize once at the bridge boundary; rendering, history and notes all use the same plain text.
       if (payload.id === state.aiPagePendingId) {
         const index = state.aiPageMessages.findIndex(message => message.pending && message.id === payload.id);
         if (index < 0) return;
         state.aiPageMessages.splice(index, 1);
         state.aiPagePendingId = '';
         state.aiPageMessages.push(payload.ok
-          ? { role: 'assistant', text: String(payload.text || ''), citations: Array.isArray(payload.citations) ? payload.citations : [] }
-          : { role: 'assistant', text: `请求失败：${payload.error || '未知错误'}` });
+          ? { role: 'assistant', text: aiResultText(payload), citations: Array.isArray(payload.citations) ? payload.citations : [] }
+          : { role: 'assistant', text: aiResultText(payload) });
         renderAiPageMessages();
         return;
       }
@@ -1195,10 +1363,10 @@
       state.aiPendingId = '';
       state.aiMessages.push(payload.ok
         ? {
-          role: 'assistant', text: String(payload.text || ''),
+          role: 'assistant', text: aiResultText(payload),
           citations: Array.isArray(payload.citations) ? payload.citations : [], anchor: requestAnchor
         }
-        : { role: 'assistant', text: `请求失败：${payload.error || '未知错误'}` });
+        : { role: 'assistant', text: aiResultText(payload) });
       renderAiMessages();
     };
 
@@ -1221,7 +1389,7 @@
       messages.forEach((message, index) => {
         const item = document.createElement('article');
         item.className = `ai-message ${message.role}${message.pending ? ' pending' : ''}`;
-        item.textContent = message.text;
+        item.textContent = String(message.text ?? '');
         if (message.citations?.length) {
           const citations = document.createElement('div'); citations.className = 'ai-citations';
           message.citations.forEach(citation => {
