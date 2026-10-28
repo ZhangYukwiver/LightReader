@@ -1,0 +1,386 @@
+[
+  {
+    "case_id": "E01",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「子曰：「學而不思則罔，思而不學則殆。」」"
+  },
+  {
+    "case_id": "E02",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「曾子曰：「吾日三省吾身，為人謀而不忠乎？與朋友交而不信乎？傳不習乎？」」"
+  },
+  {
+    "case_id": "E03",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「故木受繩則直，金就礪則利，君子博學而日參省乎己，則知明而行無過矣。」"
+  },
+  {
+    "case_id": "E04",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「吾嘗終日而思矣，不如須臾之所學也，吾嘗跂而望矣，不如登髙之博見也。」"
+  },
+  {
+    "case_id": "E05",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「臣之所好者，道也，進乎技矣。始臣之解牛之時，所見无非牛者。三年之後，未嘗見全牛也。方今之時，臣以神遇而不以目視，官知止而神欲行，依乎天理，批大郤，導大窾，因其固然。」"
+  },
+  {
+    "case_id": "E06",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters.」"
+  },
+  {
+    "case_id": "E07",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「But how does the flame get hold of the fuel? There is a beautiful point about that—_capillary attraction_[4]. “Capillary attraction!” you say,—“the attraction of hairs.” Well, never mind the name: it was given in old times, before we had a good understanding of what the real power was. It is by what is called capillary attraction that the fuel is conveyed to the part where combustion goes on, and is deposited there, not in a careless way, but very beautifully in the very midst of the centre of action which takes place around it.」"
+  },
+  {
+    "case_id": "E08",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「I should premise that I use the term Struggle for Existence in a large and metaphorical sense, including dependence of one being on another, and including (which is more important) not only the life of the individual, but success in leaving progeny. Two canine animals in a time of dearth, may be truly said to struggle with each other which shall get food and live. But a plant on the edge of a desert is said to struggle for life against the drought, though more properly it should be said to be dependent on the moisture.」"
+  },
+  {
+    "case_id": "T01",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成English，只返回译文，不要添加说明：\n\n「子曰：「見賢思齊焉，見不賢而內自省也。」」"
+  },
+  {
+    "case_id": "T02",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成English，只返回译文，不要添加说明：\n\n「登髙而招，臂非加長也，而見者遠；順風而呼，聲非加疾也，而聞者彰。假輿馬者，非利足也，而致千里；假舟檝者，非能水也，而絶江河。」"
+  },
+  {
+    "case_id": "T03",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成English，只返回译文，不要添加说明：\n\n「今臣之刀十九年矣，所解數千牛矣，而刀刃若新發於硎。彼節者有間，而刀刃者无厚，以无厚入有間，恢恢乎其於遊刃必有餘地矣，是以十九年而刀刃若新發於硎。」"
+  },
+  {
+    "case_id": "T04",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”」"
+  },
+  {
+    "case_id": "T05",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her.」"
+  },
+  {
+    "case_id": "T06",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「Vanity and pride are different things, though the words are often used synonymously. A person may be proud without being vain. Pride relates more to our opinion of ourselves; vanity to what we would have others think of us.」"
+  },
+  {
+    "case_id": "T07",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「It evidently comes, as to part of it, from the candle; but is it within the candle beforehand? No. It is not in the candle; and it is not in the air round about the candle which is necessary for its combustion. It is neither in one nor the other, but it comes from their conjoint action, a part from the candle, a part from the air; and this we have now to trace, so that we may understand thoroughly what is the chemical history of a candle when we have it burning on our table.」"
+  },
+  {
+    "case_id": "T08",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「Natural selection can act only by the preservation and accumulation of infinitesimally small inherited modifications, each profitable to the preserved being; and as modern geology has almost banished such views as the excavation of a great valley by a single diluvial wave, so will natural selection, if it be a true principle, banish the belief of the continued creation of new organic beings, or of any great and sudden modification in their structure.」"
+  },
+  {
+    "case_id": "F01",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「子曰：「由！誨女知之乎！知之為知之，不知為不知，是知也。」」"
+  },
+  {
+    "case_id": "F01",
+    "variant": "before",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「子曰：「由！誨女知之乎！知之為知之，不知為不知，是知也。」」\n\n用户问题：那最后的“知”和前面的“知”完全一样吗？请说明这里可能的读法和含义。"
+  },
+  {
+    "case_id": "F02",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「子曰：「君子和而不同，小人同而不和。」」"
+  },
+  {
+    "case_id": "F02",
+    "variant": "before",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「子曰：「君子和而不同，小人同而不和。」」\n\n用户问题：所以只要我总是反对别人，就是“和而不同”吗？请从这句话本身说明。"
+  },
+  {
+    "case_id": "F03",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「鍥而舍之，朽木不折；鍥而不舍，金石可鏤。」"
+  },
+  {
+    "case_id": "F03",
+    "variant": "before",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「鍥而舍之，朽木不折；鍥而不舍，金石可鏤。」\n\n用户问题：这是否保证只要坚持，任何目标都一定能实现？请区分原文劝勉和现实中的条件。"
+  },
+  {
+    "case_id": "F04",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「雖然，每至於族，吾見其難爲，怵然爲戒，視爲止，行爲遟，動刀甚微，謋然已解，如土委地。提刀而立，爲之四顧，爲之躊躇滿志，善刀而藏之。」"
+  },
+  {
+    "case_id": "F04",
+    "variant": "before",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「雖然，每至於族，吾見其難爲，怵然爲戒，視爲止，行爲遟，動刀甚微，謋然已解，如土委地。提刀而立，爲之四顧，爲之躊躇滿志，善刀而藏之。」\n\n用户问题：庖丁这么熟练，遇到复杂处也可以闭眼加快动作吗？请找出原文依据。"
+  },
+  {
+    "case_id": "F05",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「“I can’t explain _myself_, I’m afraid, sir,” said Alice, “because I’m not myself, you see.” “I don’t see,” said the Caterpillar. “I’m afraid I can’t put it more clearly,” Alice replied very politely, “for I can’t understand it myself to begin with; and being so many different sizes in a day is very confusing.”」"
+  },
+  {
+    "case_id": "F05",
+    "variant": "before",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「“I can’t explain _myself_, I’m afraid, sir,” said Alice, “because I’m not myself, you see.” “I don’t see,” said the Caterpillar. “I’m afraid I can’t put it more clearly,” Alice replied very politely, “for I can’t understand it myself to begin with; and being so many different sizes in a day is very confusing.”」\n\n用户问题：这里的“I’m not myself”只是在说身体不舒服吗？请结合她后面的话解释。"
+  },
+  {
+    "case_id": "F06",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「Either the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves; here and there she saw maps and pictures hung upon pegs.」"
+  },
+  {
+    "case_id": "F06",
+    "variant": "before",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「Either the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves; here and there she saw maps and pictures hung upon pegs.」\n\n用户问题：根据这段，井到底有多少米深？能给出一个确定数字吗？"
+  },
+  {
+    "case_id": "F07",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「Mr. Bennet made no answer. “Do not you want to know who has taken it?” cried his wife, impatiently. “_You_ want to tell me, and I have no objection to hearing it.”」"
+  },
+  {
+    "case_id": "F07",
+    "variant": "before",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「Mr. Bennet made no answer. “Do not you want to know who has taken it?” cried his wife, impatiently. “_You_ want to tell me, and I have no objection to hearing it.”」\n\n用户问题：他说没有意见，是否就能证明他非常热衷打听这件事？仅凭这段回答。"
+  },
+  {
+    "case_id": "F08",
+    "variant": "before",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「And going out, why? Not because it wants air merely, for the jar is as full now as it was before; but it wants pure, fresh air. The jar is full of air, partly changed, partly not changed; but it does not contain sufficient of the fresh air which is necessary for the combustion of a candle.」"
+  },
+  {
+    "case_id": "F08",
+    "variant": "before",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「And going out, why? Not because it wants air merely, for the jar is as full now as it was before; but it wants pure, fresh air. The jar is full of air, partly changed, partly not changed; but it does not contain sufficient of the fresh air which is necessary for the combustion of a candle.」\n\n用户问题：所以熄灭后瓶子里面已经变成真空了吗？如果补充现代解释，请与原文说法区分。"
+  },
+  {
+    "case_id": "E01",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「子曰：「學而不思則罔，思而不學則殆。」」"
+  },
+  {
+    "case_id": "E02",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「曾子曰：「吾日三省吾身，為人謀而不忠乎？與朋友交而不信乎？傳不習乎？」」"
+  },
+  {
+    "case_id": "E03",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「故木受繩則直，金就礪則利，君子博學而日參省乎己，則知明而行無過矣。」"
+  },
+  {
+    "case_id": "E04",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「吾嘗終日而思矣，不如須臾之所學也，吾嘗跂而望矣，不如登髙之博見也。」"
+  },
+  {
+    "case_id": "E05",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「臣之所好者，道也，進乎技矣。始臣之解牛之時，所見无非牛者。三年之後，未嘗見全牛也。方今之時，臣以神遇而不以目視，官知止而神欲行，依乎天理，批大郤，導大窾，因其固然。」"
+  },
+  {
+    "case_id": "E06",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters.」"
+  },
+  {
+    "case_id": "E07",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「But how does the flame get hold of the fuel? There is a beautiful point about that—_capillary attraction_[4]. “Capillary attraction!” you say,—“the attraction of hairs.” Well, never mind the name: it was given in old times, before we had a good understanding of what the real power was. It is by what is called capillary attraction that the fuel is conveyed to the part where combustion goes on, and is deposited there, not in a careless way, but very beautifully in the very midst of the centre of action which takes place around it.」"
+  },
+  {
+    "case_id": "E08",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「I should premise that I use the term Struggle for Existence in a large and metaphorical sense, including dependence of one being on another, and including (which is more important) not only the life of the individual, but success in leaving progeny. Two canine animals in a time of dearth, may be truly said to struggle with each other which shall get food and live. But a plant on the edge of a desert is said to struggle for life against the drought, though more properly it should be said to be dependent on the moisture.」"
+  },
+  {
+    "case_id": "T01",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成English，只返回译文，不要添加说明：\n\n「子曰：「見賢思齊焉，見不賢而內自省也。」」"
+  },
+  {
+    "case_id": "T02",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成English，只返回译文，不要添加说明：\n\n「登髙而招，臂非加長也，而見者遠；順風而呼，聲非加疾也，而聞者彰。假輿馬者，非利足也，而致千里；假舟檝者，非能水也，而絶江河。」"
+  },
+  {
+    "case_id": "T03",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成English，只返回译文，不要添加说明：\n\n「今臣之刀十九年矣，所解數千牛矣，而刀刃若新發於硎。彼節者有間，而刀刃者无厚，以无厚入有間，恢恢乎其於遊刃必有餘地矣，是以十九年而刀刃若新發於硎。」"
+  },
+  {
+    "case_id": "T04",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”」"
+  },
+  {
+    "case_id": "T05",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her.」"
+  },
+  {
+    "case_id": "T06",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「Vanity and pride are different things, though the words are often used synonymously. A person may be proud without being vain. Pride relates more to our opinion of ourselves; vanity to what we would have others think of us.」"
+  },
+  {
+    "case_id": "T07",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「It evidently comes, as to part of it, from the candle; but is it within the candle beforehand? No. It is not in the candle; and it is not in the air round about the candle which is necessary for its combustion. It is neither in one nor the other, but it comes from their conjoint action, a part from the candle, a part from the air; and this we have now to trace, so that we may understand thoroughly what is the chemical history of a candle when we have it burning on our table.」"
+  },
+  {
+    "case_id": "T08",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请把以下文字翻译成简体中文，只返回译文，不要添加说明：\n\n「Natural selection can act only by the preservation and accumulation of infinitesimally small inherited modifications, each profitable to the preserved being; and as modern geology has almost banished such views as the excavation of a great valley by a single diluvial wave, so will natural selection, if it be a true principle, banish the belief of the continued creation of new organic beings, or of any great and sudden modification in their structure.」"
+  },
+  {
+    "case_id": "F01",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「子曰：「由！誨女知之乎！知之為知之，不知為不知，是知也。」」"
+  },
+  {
+    "case_id": "F01",
+    "variant": "after",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「子曰：「由！誨女知之乎！知之為知之，不知為不知，是知也。」」\n\n用户问题：那最后的“知”和前面的“知”完全一样吗？请说明这里可能的读法和含义。"
+  },
+  {
+    "case_id": "F02",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「子曰：「君子和而不同，小人同而不和。」」"
+  },
+  {
+    "case_id": "F02",
+    "variant": "after",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「子曰：「君子和而不同，小人同而不和。」」\n\n用户问题：所以只要我总是反对别人，就是“和而不同”吗？请从这句话本身说明。"
+  },
+  {
+    "case_id": "F03",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「鍥而舍之，朽木不折；鍥而不舍，金石可鏤。」"
+  },
+  {
+    "case_id": "F03",
+    "variant": "after",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「鍥而舍之，朽木不折；鍥而不舍，金石可鏤。」\n\n用户问题：这是否保证只要坚持，任何目标都一定能实现？请区分原文劝勉和现实中的条件。"
+  },
+  {
+    "case_id": "F04",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「雖然，每至於族，吾見其難爲，怵然爲戒，視爲止，行爲遟，動刀甚微，謋然已解，如土委地。提刀而立，爲之四顧，爲之躊躇滿志，善刀而藏之。」"
+  },
+  {
+    "case_id": "F04",
+    "variant": "after",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「雖然，每至於族，吾見其難爲，怵然爲戒，視爲止，行爲遟，動刀甚微，謋然已解，如土委地。提刀而立，爲之四顧，爲之躊躇滿志，善刀而藏之。」\n\n用户问题：庖丁这么熟练，遇到复杂处也可以闭眼加快动作吗？请找出原文依据。"
+  },
+  {
+    "case_id": "F05",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「“I can’t explain _myself_, I’m afraid, sir,” said Alice, “because I’m not myself, you see.” “I don’t see,” said the Caterpillar. “I’m afraid I can’t put it more clearly,” Alice replied very politely, “for I can’t understand it myself to begin with; and being so many different sizes in a day is very confusing.”」"
+  },
+  {
+    "case_id": "F05",
+    "variant": "after",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「“I can’t explain _myself_, I’m afraid, sir,” said Alice, “because I’m not myself, you see.” “I don’t see,” said the Caterpillar. “I’m afraid I can’t put it more clearly,” Alice replied very politely, “for I can’t understand it myself to begin with; and being so many different sizes in a day is very confusing.”」\n\n用户问题：这里的“I’m not myself”只是在说身体不舒服吗？请结合她后面的话解释。"
+  },
+  {
+    "case_id": "F06",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「Either the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves; here and there she saw maps and pictures hung upon pegs.」"
+  },
+  {
+    "case_id": "F06",
+    "variant": "after",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「Either the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves; here and there she saw maps and pictures hung upon pegs.」\n\n用户问题：根据这段，井到底有多少米深？能给出一个确定数字吗？"
+  },
+  {
+    "case_id": "F07",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「Mr. Bennet made no answer. “Do not you want to know who has taken it?” cried his wife, impatiently. “_You_ want to tell me, and I have no objection to hearing it.”」"
+  },
+  {
+    "case_id": "F07",
+    "variant": "after",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「Mr. Bennet made no answer. “Do not you want to know who has taken it?” cried his wife, impatiently. “_You_ want to tell me, and I have no objection to hearing it.”」\n\n用户问题：他说没有意见，是否就能证明他非常热衷打听这件事？仅凭这段回答。"
+  },
+  {
+    "case_id": "F08",
+    "variant": "after",
+    "phase": "initial",
+    "prompt": "请解释以下选中文字，先给简明结论，再分点说明，不要改写原文：\n\n「And going out, why? Not because it wants air merely, for the jar is as full now as it was before; but it wants pure, fresh air. The jar is full of air, partly changed, partly not changed; but it does not contain sufficient of the fresh air which is necessary for the combustion of a candle.」"
+  },
+  {
+    "case_id": "F08",
+    "variant": "after",
+    "phase": "followup",
+    "prompt": "请围绕以下选中文字回答用户问题。选中文字：\n「And going out, why? Not because it wants air merely, for the jar is as full now as it was before; but it wants pure, fresh air. The jar is full of air, partly changed, partly not changed; but it does not contain sufficient of the fresh air which is necessary for the combustion of a candle.」\n\n用户问题：所以熄灭后瓶子里面已经变成真空了吗？如果补充现代解释，请与原文说法区分。"
+  }
+]

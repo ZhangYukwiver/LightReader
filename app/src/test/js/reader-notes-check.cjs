@@ -1,0 +1,35 @@
+const assert = require('node:assert/strict');
+const notes = require('../../main/assets/reader-notes.js');
+const original = { id: 'one', start: 0, end: 5, quote: 'alpha', note: '保留说明', global: false, orphaned: false };
+const document = { title: '示例.txt', textHash: 'a'.repeat(64), format: 'TXT' };
+
+assert.equal(notes.reanchor([original], 'alpha beta', 'beta')[0].orphaned, true);
+assert.equal(notes.reanchor([original], 'alpha beta', 'alpha alpha')[0].orphaned, true);
+assert.equal(notes.reanchor([original], 'alpha beta', 'new alpha beta')[0].start, 4);
+const detached = notes.normalize([{ ...original, start: undefined, end: undefined }], 'changed');
+assert.equal(detached[0].orphaned, true);
+const backup = notes.parseBackup(notes.backup(document, detached));
+assert.equal(backup.notes[0].note, original.note);
+assert.equal(backup.notes[0].quote, original.quote);
+
+let result = notes.merge([], [original], 'alpha beta', true);
+assert.equal(result.added, 1);
+assert.equal(result.notes[0].orphaned, false);
+result = notes.merge(result.notes, [original], 'alpha beta', true);
+assert.equal(result.added, 0);
+assert.equal(result.skipped, 1);
+const changed = { ...original, note: '另一个版本' };
+result = notes.merge(result.notes, [changed], 'alpha beta', true);
+assert.equal(result.conflicts, 1);
+assert.equal(result.notes[0].note, original.note);
+assert.equal(result.notes[1].orphaned, true);
+assert.equal(notes.merge(result.notes, [changed], 'alpha beta', true).added, 0);
+assert.equal(notes.merge([], [original], 'alpha beta', false).notes[0].orphaned, true);
+const second = { ...original, id: 'two', start: 6, end: 10, quote: 'beta' };
+result = notes.merge([{ ...original, global: true }], [second], 'alpha beta alpha', true);
+assert.equal(result.notes[1].orphaned, false, 'Unrelated global notes must not detach an import');
+assert.throws(() => notes.parseBackup(JSON.stringify({ format: 'other', notes: [original] })));
+assert.throws(() => notes.parseBackup(notes.backup(document, [{ ...original, note: '' }])));
+assert.match(notes.markdown('文档', detached), /待定位/);
+assert.match(notes.markdown('文档', detached), /保留说明/);
+console.log('ReaderNotesCheck OK: detached anchors, round trip, deduplication, conflicts and validation');

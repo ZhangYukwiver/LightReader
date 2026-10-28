@@ -1,0 +1,9 @@
+{
+  "analects": {"title": "論語", "author": "孔子及其弟子", "url": "https://www.gutenberg.org/cache/epub/23839/pg23839.txt", "format": "text", "rights": "公版古文；保留来源版本用字，不采用现代译文"},
+  "xunzi": {"title": "荀子·勸學篇", "author": "荀子", "url": "https://zh.wikisource.org/wiki/%E8%8D%80%E5%AD%90/%E5%8B%B8%E5%AD%B8%E7%AF%87", "format": "html", "rights": "公版古文节选；不摘录夹注及网站编辑说明"},
+  "zhuangzi": {"title": "莊子·養生主", "author": "莊子", "url": "https://zh.wikisource.org/zh/%E8%8E%8A%E5%AD%90/%E9%A4%8A%E7%94%9F%E4%B8%BB", "format": "html", "rights": "公版古文节选；保留来源版本用字"},
+  "alice": {"title": "Alice’s Adventures in Wonderland", "author": "Lewis Carroll", "url": "https://www.gutenberg.org/cache/epub/11/pg11.txt", "format": "text", "rights": "公版英文原著节选；保留源文本强调标记"},
+  "pride": {"title": "Pride and Prejudice", "author": "Jane Austen", "url": "https://www.gutenberg.org/cache/epub/1342/pg1342.txt", "format": "text", "rights": "公版英文原著节选；保留源文本强调标记"},
+  "candle": {"title": "The Chemical History of a Candle", "author": "Michael Faraday；William Crookes 编", "url": "https://www.gutenberg.org/cache/epub/14474/pg14474.txt", "format": "text", "rights": "公版英文讲演节选；保留源文本脚注标号"},
+  "darwin": {"title": "On the Origin of Species", "author": "Charles Darwin", "url": "https://www.gutenberg.org/cache/epub/1228/pg1228.txt", "format": "text", "rights": "公版英文原著节选；按历史文本评分，不视作当代完整科学论述"}
+}
