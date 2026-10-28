@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class MainActivity extends Activity {
     private static final int OPEN_TEXT = 1;
     private static final int CREATE_EXPORT = 2;
+    private static final int IMPORT_NOTES = 3;
     private static final int MAX_TEXT_BYTES = 20 * 1024 * 1024;
     private static final int MAX_HTML_CHARS = 5 * 1024 * 1024;
     private static final String PREFS = "reader_state";
@@ -79,6 +80,8 @@ public final class MainActivity extends Activity {
     private volatile String currentDocumentToken;
     private volatile byte[] pendingExport;
     private SecretStore secretStore;
+    private AiConversationStore conversationStore;
+    private volatile String pendingNotesToken;
     private volatile boolean destroyed;
     private volatile String pendingExportFormat;
     private final AtomicInteger openGeneration = new AtomicInteger();
@@ -103,6 +106,7 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         secretStore = new SecretStore(this);
+        conversationStore = new AiConversationStore(new File(getFilesDir(), "ai_conversations"));
         webView = new ReaderWebView(this);
         if (Build.VERSION.SDK_INT >= 30) htmlTopInsetPx = statusBarFallbackPx();
         WebSettings settings = webView.getSettings();
@@ -216,7 +220,11 @@ public final class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+            if (requestCode == CREATE_EXPORT) { pendingExport = null; pendingExportFormat = null; }
+            if (requestCode == IMPORT_NOTES) pendingNotesToken = null;
+            return;
+        }
         Uri uri = data.getData();
         if (requestCode == OPEN_TEXT) {
             if ((data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
@@ -235,6 +243,23 @@ public final class MainActivity extends Activity {
             pendingExport = null;
             pendingExportFormat = null;
             new Thread(() -> writeExport(uri, bytes, format), "write-export").start();
+        } else if (requestCode == IMPORT_NOTES) {
+            final String token = pendingNotesToken;
+            pendingNotesToken = null;
+            new Thread(() -> {
+                try (InputStream input = getContentResolver().openInputStream(uri)) {
+                    if (input == null) throw new IOException("无法读取笔记备份");
+                    String raw = new String(readLimited(input, 2_000_000, "笔记备份不能超过 2 MB"), StandardCharsets.UTF_8);
+                    runOnUiThread(() -> {
+                        if (!destroyed && webView != null && token != null && token.equals(currentDocumentToken)) {
+                            webView.evaluateJavascript("window.onNotesImport(" + JSONObject.quote(token) + ","
+                                    + JSONObject.quote(raw) + ")", null);
+                        }
+                    });
+                } catch (Exception error) {
+                    toast(error.getMessage() == null ? "笔记备份读取失败" : error.getMessage());
+                }
+            }, "import-notes").start();
         }
     }
 
@@ -402,7 +427,7 @@ public final class MainActivity extends Activity {
                     + JSONObject.quote("DOCX") + ","
                     + (html == null ? "null" : JSONObject.quote(html)) + ","
                     + JSONObject.quote(progress) + ","
-                    + (edited ? "true" : "false") + ")";
+                    + (edited ? "true" : "false") + "," + JSONObject.quote(token) + ")";
         } else {
             // Keep large TXT payloads out of evaluateJavascript. The page pulls bounded
             // chunks through ReaderBridge while yielding between batches.
@@ -427,6 +452,7 @@ public final class MainActivity extends Activity {
         currentDocumentToken = null;
         pendingExport = null;
         pendingExportFormat = null;
+        pendingNotesToken = null;
     }
 
     private JSONArray storedRecentFiles() {
@@ -570,7 +596,9 @@ public final class MainActivity extends Activity {
         try {
             JSONObject state = new JSONObject(saved);
             if (uri.equals(currentUri) && currentTextHash != null
-                    && !currentTextHash.equals(state.optString("textHash"))) return 0;
+                    && !currentTextHash.equals(state.optString("textHash"))) {
+                return state.getJSONArray("notes").length();
+            }
             int stored = state.optInt("noteCount", -1);
             if (stored >= 0) return stored;
             return Math.max(0, state.getJSONArray("notes").length());
@@ -623,8 +651,14 @@ public final class MainActivity extends Activity {
         try {
             JSONObject state = new JSONObject(saved);
             String hash = currentTextHash == null ? sha256(currentText) : currentTextHash;
-            if (!hash.equals(state.optString("textHash"))) return "[]";
-            return state.getJSONArray("notes").toString();
+            JSONArray notes = state.getJSONArray("notes");
+            if (!hash.equals(state.optString("textHash"))) {
+                for (int i = 0; i < notes.length(); i++) {
+                    JSONObject note = notes.optJSONObject(i);
+                    if (note != null) note.put("orphaned", true);
+                }
+            }
+            return notes.toString();
         } catch (Exception ignored) {
             return "[]";
         }
@@ -719,6 +753,10 @@ public final class MainActivity extends Activity {
         }
         String raw = json.trim();
         JSONObject payload = raw.startsWith("{") ? new JSONObject(raw) : null;
+        if (payload != null && payload.has("documentToken")
+                && !payload.optString("documentToken").equals(currentDocumentToken)) {
+            throw new IOException("文档已切换，请重新操作");
+        }
         JSONArray notes = payload == null ? new JSONArray(raw) : payload.optJSONArray("notes");
         if (notes == null) throw new IllegalArgumentException("批注数据无效");
         int annotationCount = payload == null
@@ -921,14 +959,23 @@ public final class MainActivity extends Activity {
 
     private void sendAiRequest(String requestJson) {
         final JSONObject request;
+        final String documentUri;
+        final String token;
         try {
             request = new JSONObject(requestJson);
+            token = request.optString("documentToken");
+            documentUri = currentUri;
+            if (documentUri != null) {
+                if (!token.equals(currentDocumentToken)) throw new IOException("文档已切换，请重新发送");
+                conversationStore.begin(documentUri, request.getString("id"));
+            } else if (!token.isEmpty()) throw new IOException("文档已关闭，请重新打开");
         } catch (Exception error) {
-            toast("AI 请求格式无效");
+            toast(error.getMessage() == null ? "AI 请求格式无效" : error.getMessage());
             return;
         }
         new Thread(() -> {
             String requestId = request.optString("id", "");
+            JSONObject payload = new JSONObject();
             try {
                 JSONObject channel = findAiChannel(request.optString("channelId", ""));
                 if (channel == null) throw new IllegalArgumentException("请先选择 AI 渠道");
@@ -937,8 +984,7 @@ public final class MainActivity extends Activity {
                         request.optJSONArray("history") == null ? new JSONArray() : request.optJSONArray("history"),
                         request.optString("prompt", ""),
                         request.optBoolean("webSearch", false));
-                JSONObject payload = new JSONObject()
-                        .put("id", requestId)
+                payload.put("id", requestId)
                         .put("ok", true)
                         .put("text", result.text);
                 JSONArray citations = new JSONArray();
@@ -946,22 +992,33 @@ public final class MainActivity extends Activity {
                     citations.put(new JSONObject().put("url", citation.getKey()).put("title", citation.getValue()));
                 }
                 payload.put("citations", citations);
-                deliverAiResult(payload);
             } catch (Exception error) {
                 try {
-                    deliverAiResult(new JSONObject().put("id", requestId).put("ok", false)
-                            .put("error", error.getMessage() == null ? "AI 请求失败" : error.getMessage()));
+                    payload.put("id", requestId).put("ok", false)
+                            .put("error", error.getMessage() == null ? "AI 请求失败" : error.getMessage());
                 } catch (Exception ignored) {
                     // JSONObject construction cannot fail for these primitive fields.
                 }
             }
+            if (documentUri != null) {
+                try {
+                    conversationStore.finish(documentUri, requestId, payload);
+                } catch (Exception error) {
+                    toast("AI 回答暂未保存：" + error.getMessage());
+                }
+            }
+            deliverAiResult(payload, documentUri, token);
         }, "ai-request").start();
     }
 
-    private void deliverAiResult(JSONObject payload) {
+    private void deliverAiResult(JSONObject payload, String documentUri, String token) {
         if (destroyed) return;
         runOnUiThread(() -> {
             if (webView != null && !destroyed) {
+                if (documentUri == null ? currentUri != null : !documentUri.equals(currentUri)) return;
+                try {
+                    payload.put("documentToken", documentUri == null ? "" : currentDocumentToken);
+                } catch (Exception ignored) { return; }
                 webView.evaluateJavascript("window.onAiResult(" + JSONObject.quote(payload.toString()) + ")", null);
             }
         });
@@ -1086,11 +1143,81 @@ public final class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public void saveAnnotations(String json) {
+        public boolean saveAnnotations(String json) {
             try {
                 saveNotes(json);
+                return true;
             } catch (Exception error) {
                 toast("批注保存失败");
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public String getDocumentData(String token) {
+            try {
+                if (token == null || !token.equals(currentDocumentToken)) throw new IOException("文档已切换");
+                String uri = currentUri;
+                JSONObject data = new JSONObject().put("document", new JSONObject()
+                        .put("title", currentTitle).put("format", currentDocx ? "DOCX" : "TXT")
+                        .put("textHash", currentTextHash));
+                try {
+                    data.put("conversation", conversationStore.load(uri));
+                } catch (Exception error) {
+                    toast("无法读取文档会话：" + error.getMessage());
+                }
+                if (!token.equals(currentDocumentToken)) throw new IOException("文档已切换");
+                return data.toString();
+            } catch (Exception error) {
+                toast(error.getMessage() == null ? "无法读取文档会话" : error.getMessage());
+                return "";
+            }
+        }
+
+        @JavascriptInterface
+        public boolean saveConversation(String token, String json) {
+            try {
+                if (token == null || !token.equals(currentDocumentToken) || json == null || json.length() > 8_000_000) {
+                    throw new IOException("会话数据无效或文档已切换");
+                }
+                conversationStore.save(currentUri, new JSONObject(json));
+                return true;
+            } catch (Exception error) {
+                toast(error.getMessage() == null ? "会话保存失败" : error.getMessage());
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public void importNotes(String token) {
+            runOnUiThread(() -> {
+                if (token == null || !token.equals(currentDocumentToken)) return;
+                pendingNotesToken = token;
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                        .setType("*/*").putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/plain"});
+                startActivityForResult(intent, IMPORT_NOTES);
+            });
+        }
+
+        @JavascriptInterface
+        public void exportNotes(String token, String format, String content) {
+            try {
+                if (token == null || !token.equals(currentDocumentToken) || content == null) throw new IOException("文档已切换");
+                if (!"md".equals(format) && !"json".equals(format)) throw new IOException("笔记格式无效");
+                byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+                if (bytes.length > 2_000_000) throw new IOException("笔记导出不能超过 2 MB");
+                String name = currentTitle.replaceFirst("\\.[^.]+$", "") + ".notes." + format;
+                runOnUiThread(() -> {
+                    if (!token.equals(currentDocumentToken)) return;
+                    pendingExport = bytes;
+                    pendingExportFormat = "json".equals(format) ? "笔记备份" : "Markdown 笔记";
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                            .setType("json".equals(format) ? "application/json" : "text/markdown")
+                            .putExtra(Intent.EXTRA_TITLE, name);
+                    startActivityForResult(intent, CREATE_EXPORT);
+                });
+            } catch (Exception error) {
+                toast(error.getMessage() == null ? "笔记导出失败" : error.getMessage());
             }
         }
 
@@ -1118,11 +1245,13 @@ public final class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public void saveEditedDocument(String json) {
+        public boolean saveEditedDocument(String json) {
             try {
                 MainActivity.this.saveEditedDocument(json);
+                return true;
             } catch (Exception error) {
                 toast(error.getMessage() == null ? "保存修改失败" : error.getMessage());
+                return false;
             }
         }
 
