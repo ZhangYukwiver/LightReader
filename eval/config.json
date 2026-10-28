@@ -1,0 +1,11 @@
+{
+  "before": "48472105160b737e94bd1c838454ccb3aee88e65",
+  "after": "675630c0b35c613acb9373b6e0c9042c7c2a0af1",
+  "protocol": "chat",
+  "baseUrl": "https://api.deepseek.com",
+  "model": "deepseek-v4-flash",
+  "webSearch": false,
+  "provider_docs": "https://api-docs.deepseek.com/zh-cn/api/create-chat-completion/",
+  "json_jar_url": "https://repo.maven.apache.org/maven2/org/json/json/20240303/json-20240303.jar",
+  "json_jar_sha256": "3cf6cd6892e32e2b4c1c39e0f52f5248a2f5b37646fdfbb79a66b46b618414ed"
+}

@@ -13,3 +13,7 @@ local.properties
 *.key
 *.apk
 *.aab
+
+# Evaluation credentials and Python bytecode stay local; generated evidence is under build/.
+eval/*.local
+__pycache__/

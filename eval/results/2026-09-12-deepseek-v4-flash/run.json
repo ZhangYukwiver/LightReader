@@ -1,0 +1,69 @@
+{
+  "started_at": "2026-09-12T15:05:43.461168+00:00",
+  "prepared": {
+    "prepared_at": "2026-09-12T15:05:22.223985+00:00",
+    "config": {
+      "before": "48472105160b737e94bd1c838454ccb3aee88e65",
+      "after": "675630c0b35c613acb9373b6e0c9042c7c2a0af1",
+      "protocol": "chat",
+      "baseUrl": "https://api.deepseek.com",
+      "model": "deepseek-v4-flash",
+      "webSearch": false,
+      "provider_docs": "https://api-docs.deepseek.com/zh-cn/api/create-chat-completion/",
+      "json_jar_url": "https://repo.maven.apache.org/maven2/org/json/json/20240303/json-20240303.jar",
+      "json_jar_sha256": "3cf6cd6892e32e2b4c1c39e0f52f5248a2f5b37646fdfbb79a66b46b618414ed"
+    },
+    "files": {
+      "cases.json": "fb294d0fcdc5a420fc60890659b5e3b3d56858a8f23e8b0d073d68b61c6933bc",
+      "sources.json": "f9ad67ff50a95e8626f8eda435145bd2f479d9e4cb728b1d9a3b76b3d6e01818",
+      "rubric.md": "4f829b7865b6903149117e407f1ca5345d20a9a0e8ed4195f9e5327af07c3e7c",
+      "config.json": "c62577122c25b114179839918649a95ed4b557e5b5648f2549009b660b7731b5",
+      "AiEvalRunner.java": "d019b8ec7d7a9ae095fa9e6ceb2b282796dd5b0606cc43647ba1aebabf280a7e",
+      "reader_adapter.mjs": "498f584634adfd152a0451c9ac8e82c9df5c82976b6fd189e6663a09f936b83b",
+      "evaluate.py": "b412cb72d3f9ebe61cb9885f12f68812e1686c7e7081ed2805c7c3928b693b68"
+    },
+    "variants": {
+      "before": {
+        "sha": "48472105160b737e94bd1c838454ccb3aee88e65",
+        "hashes": {
+          "AiClient.java": "21852159f561226f2ddcaca2833d4b50484f54c80b1c3a4a30e608e93d602142",
+          "reader.html": "e3b31e9de31f698be78e739c93a92a3d00222e1ee3a131776550aa5ac6b982a8"
+        },
+        "java_args": [
+          "/Users/a0000/.cache/lightreader-toolchain/jdk-17/Contents/Home/bin/java",
+          "-cp",
+          "/Users/a0000/Desktop/阅读器/build/reading-eval/prepared/before/classes:/Users/a0000/Desktop/阅读器/build/reading-eval/deps/json-20240303.jar",
+          "com.lightreader.app.AiEvalRunner"
+        ],
+        "endpoint": "https://api.deepseek.com/chat/completions",
+        "system_prompt": "你是轻阅中的阅读助手。用用户提问的语言回答，先给结论，再给必要解释。不要编造来源；如果启用了联网搜索，只使用返回的搜索结果并保留引用。"
+      },
+      "after": {
+        "sha": "675630c0b35c613acb9373b6e0c9042c7c2a0af1",
+        "hashes": {
+          "AiClient.java": "767a22813e8fcbba329e55de5276559c823989daeefe49c0f8c4bbec56a99375",
+          "reader.html": "b0597a4032fbf595d7d335b43e48ce662a57e9fed50d29525ac9bae5207063f1"
+        },
+        "java_args": [
+          "/Users/a0000/.cache/lightreader-toolchain/jdk-17/Contents/Home/bin/java",
+          "-cp",
+          "/Users/a0000/Desktop/阅读器/build/reading-eval/prepared/after/classes:/Users/a0000/Desktop/阅读器/build/reading-eval/deps/json-20240303.jar",
+          "com.lightreader.app.AiEvalRunner"
+        ],
+        "endpoint": "https://api.deepseek.com/chat/completions",
+        "system_prompt": "你是轻阅中的阅读助手。用用户提问的语言回答，先给结论，再给必要解释。不要编造来源；如果启用了联网搜索，只使用返回的搜索结果并保留引用。输出必须是纯文本，不要使用 Markdown 标记（如标题井号、加粗/斜体符号、反引号代码围栏、表格分隔线或链接语法）；需要分点时使用普通换行、数字或圆点。"
+      }
+    },
+    "java": "/Users/a0000/.cache/lightreader-toolchain/jdk-17/Contents/Home/bin/java",
+    "case_count": 24,
+    "planned_requests_per_round": 64,
+    "timing_scope": "host JVM AiClient.request; normalization separate; TTFT and Android UI not measured",
+    "source_evidence_sha256": "6250e1cf75fc1aa233d356f415d5bb4330e7be904645226b74b88842a7910421"
+  },
+  "repeat": 1,
+  "status": "completed_assistant_review",
+  "finished_at": "2026-09-12T15:16:18.129363+00:00",
+  "review_completed_at": "2026-09-12T15:22:08.491319+00:00",
+  "review_note": "Codex按冻结标准分批随机隐藏版本逐条辅助评分；格式可能暴露版本，不是人类独立盲评。",
+  "archive_note": "原始请求和评分完成后，从 build/reading-eval/runs/20260912T150543451668Z 归档到 eval/results/2026-09-12-deepseek-v4-flash；原始记录、冻结材料和评分未改动。"
+}

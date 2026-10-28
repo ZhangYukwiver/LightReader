@@ -1,0 +1,271 @@
+{
+  "analects": {
+    "title": "論語",
+    "author": "孔子及其弟子",
+    "url": "https://www.gutenberg.org/cache/epub/23839/pg23839.txt",
+    "format": "text",
+    "rights": "公版古文；保留来源版本用字，不采用现代译文",
+    "source_sha256": "dd2385d1e6bc3a5cde6d4d5efdf16d1bab0bff40a0209a7dc9c4909b80bf3035",
+    "cached_at": "2026-09-12T14:47:23.003426+00:00",
+    "excerpts": [
+      {
+        "case_id": "E01",
+        "section": "為政第二·15",
+        "normalized_source_offset": 2033,
+        "length": 19,
+        "quote_sha256": "ad6a63dfd939e0d9d482daec8c1f5dc27c2ba3cea50117b14c3700d98e802b13",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "E02",
+        "section": "學而第一·4",
+        "normalized_source_offset": 946,
+        "length": 35,
+        "quote_sha256": "7013a50c35385fa78af128408cda6d288dd09aa8cd2799b6fe69e92cf7e08789",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "T01",
+        "section": "里仁第四·17",
+        "normalized_source_offset": 4092,
+        "length": 20,
+        "quote_sha256": "bcaf8dbf3121c4cecdf2834ba241279ec40685f1fa55961e88847036543e9585",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "F01",
+        "section": "為政第二·17",
+        "normalized_source_offset": 2077,
+        "length": 29,
+        "quote_sha256": "560f5b2ba9ac7eea4659a36bf953e170a0cbf0c87e2b6243060314ded7aa0212",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "F02",
+        "section": "子路第十三·23",
+        "normalized_source_offset": 15695,
+        "length": 19,
+        "quote_sha256": "f6849926f11fa06be7165b502ee1f6859cbd52b909f26c600d64403800a84a23",
+        "verbatim_match": true
+      }
+    ]
+  },
+  "xunzi": {
+    "title": "荀子·勸學篇",
+    "author": "荀子",
+    "url": "https://zh.wikisource.org/wiki/%E8%8D%80%E5%AD%90/%E5%8B%B8%E5%AD%B8%E7%AF%87",
+    "format": "html",
+    "rights": "公版古文节选；不摘录夹注及网站编辑说明",
+    "source_sha256": "8e7fb5a6254925a1c24b080fef90dbc1b2d002ca22e1b8a6cebcba06f71f5e29",
+    "cached_at": "2026-09-12T14:47:26.296330+00:00",
+    "excerpts": [
+      {
+        "case_id": "E03",
+        "section": "勸學篇·木受繩段",
+        "normalized_source_offset": 460,
+        "length": 33,
+        "quote_sha256": "de2122bed7e4be3ac79440539873171f5f5f21b9b470962b6190e0a62a58bc41",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "E04",
+        "section": "勸學篇·終日而思段",
+        "normalized_source_offset": 814,
+        "length": 33,
+        "quote_sha256": "fb3fa903817096a65bb8f01befa3a03efaeebf457cc9f47fce1d4c3659e1071f",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "T02",
+        "section": "勸學篇·登髙而招段",
+        "normalized_source_offset": 855,
+        "length": 62,
+        "quote_sha256": "b1a50de35eb704bcc5c58f2082001833f481ec7db057e2eaba03b76413fb0e5c",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "F03",
+        "section": "勸學篇·鍥而不舍",
+        "normalized_source_offset": 1953,
+        "length": 20,
+        "quote_sha256": "26229d246049a30fa25d70033b3f5b3065d3a1a63c1e7ff3072418e3606d5a0b",
+        "verbatim_match": true
+      }
+    ]
+  },
+  "zhuangzi": {
+    "title": "莊子·養生主",
+    "author": "莊子",
+    "url": "https://zh.wikisource.org/zh/%E8%8E%8A%E5%AD%90/%E9%A4%8A%E7%94%9F%E4%B8%BB",
+    "format": "html",
+    "rights": "公版古文节选；保留来源版本用字",
+    "source_sha256": "281b05c4b765e2ed32f8fac0ce7effcfa4189eee30d39a22f3114cf9d0237776",
+    "cached_at": "2026-09-12T14:47:27.048208+00:00",
+    "excerpts": [
+      {
+        "case_id": "E05",
+        "section": "養生主·庖丁解牛的三个阶段",
+        "normalized_source_offset": 539,
+        "length": 82,
+        "quote_sha256": "2b6365d5affaba6607b7c28eb779214132cb1854b6933b4de4bbb27c93013eb2",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "T03",
+        "section": "養生主·十九年的刀",
+        "normalized_source_offset": 653,
+        "length": 72,
+        "quote_sha256": "b274673b9f218a78eb392078b2b651b93cd32376ab912f8193064c16553aff80",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "F04",
+        "section": "養生主·每至於族",
+        "normalized_source_offset": 725,
+        "length": 65,
+        "quote_sha256": "9e6ed2659443fefc9e493148c4a1df240f50cdb0b4a111233b4056830ba75d79",
+        "verbatim_match": true
+      }
+    ]
+  },
+  "alice": {
+    "title": "Alice’s Adventures in Wonderland",
+    "author": "Lewis Carroll",
+    "url": "https://www.gutenberg.org/cache/epub/11/pg11.txt",
+    "format": "text",
+    "rights": "公版英文原著节选；保留源文本强调标记",
+    "source_sha256": "01b38ea4c710a84bc18d0bd41271a5a1a92b94e97b2812f4dece97d4a694725e",
+    "cached_at": "2026-09-12T14:47:26.394985+00:00",
+    "excerpts": [
+      {
+        "case_id": "T04",
+        "section": "Chapter I·opening",
+        "normalized_source_offset": 1401,
+        "length": 302,
+        "quote_sha256": "13059a06f39e742eb543f71d331c6088785a34f5286433aec07e4f023e327e70",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "T05",
+        "section": "Chapter I·daisy-chain",
+        "normalized_source_offset": 1704,
+        "length": 289,
+        "quote_sha256": "bcc1283dd130bea7e0770f8d354880f7ee1085748a4c5ee7d75cc59cef3d21fa",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "F05",
+        "section": "Chapter V·identity conversation",
+        "normalized_source_offset": 47178,
+        "length": 311,
+        "quote_sha256": "ab732814e123a96e0cbe0417690b3906a1f66323365b157b691f39f65f8ceac0",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "F06",
+        "section": "Chapter I·falling into the well",
+        "normalized_source_offset": 3064,
+        "length": 432,
+        "quote_sha256": "32367aab39f6ce26287b741186fde647c6e5ab7cd8d762f9fda0afd57de10e54",
+        "verbatim_match": true
+      }
+    ]
+  },
+  "pride": {
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "url": "https://www.gutenberg.org/cache/epub/1342/pg1342.txt",
+    "format": "text",
+    "rights": "公版英文原著节选；保留源文本强调标记",
+    "source_sha256": "3f6bb9d6f78e0293b56acd4714dd68cb7d6d1d293402031ce9d5a216bcaf9d75",
+    "cached_at": "2026-09-12T14:47:25.593534+00:00",
+    "excerpts": [
+      {
+        "case_id": "E06",
+        "section": "Chapter I·opening",
+        "normalized_source_offset": 29766,
+        "length": 377,
+        "quote_sha256": "ac2cfd1ffac2d12737d97cce285a5c421da640e937a3e47b1bcfc687a5238d57",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "T06",
+        "section": "Chapter V·vanity and pride",
+        "normalized_source_offset": 59257,
+        "length": 223,
+        "quote_sha256": "0e6163187024128768b4f039a576b630fd64afe01df6972c8f7c3f5514fd5832",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "F07",
+        "section": "Chapter I·Mr. and Mrs. Bennet",
+        "normalized_source_offset": 30380,
+        "length": 163,
+        "quote_sha256": "10140955b81cf9b7e09e2597deb26a093e0ffedbee9bcf1e2d9236d299ca4f9f",
+        "verbatim_match": true
+      }
+    ]
+  },
+  "candle": {
+    "title": "The Chemical History of a Candle",
+    "author": "Michael Faraday；William Crookes 编",
+    "url": "https://www.gutenberg.org/cache/epub/14474/pg14474.txt",
+    "format": "text",
+    "rights": "公版英文讲演节选；保留源文本脚注标号",
+    "source_sha256": "c053ca4ae7880585a15001cd3ffdaf5f09cd08c3329b828ffd8c90ce335482b9",
+    "cached_at": "2026-09-12T14:47:25.407030+00:00",
+    "excerpts": [
+      {
+        "case_id": "E07",
+        "section": "Lecture I·capillary attraction",
+        "normalized_source_offset": 19033,
+        "length": 534,
+        "quote_sha256": "1d2ac2d1badd76a2669905384604c83ef36be0e7f3c46472e4fa863abcd142d9",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "T07",
+        "section": "Lecture III·origin of water",
+        "normalized_source_offset": 72522,
+        "length": 479,
+        "quote_sha256": "47bf01f81a186a5e88422f3a592efc2b80be0c5bb9660a50a633133b81d25369",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "F08",
+        "section": "Lecture II·fresh air and combustion",
+        "normalized_source_offset": 40543,
+        "length": 290,
+        "quote_sha256": "e1bfad4b51c9116f7c750e609db3484fdad7b5d091940be7c69bd0d9a5b03f9e",
+        "verbatim_match": true
+      }
+    ]
+  },
+  "darwin": {
+    "title": "On the Origin of Species",
+    "author": "Charles Darwin",
+    "url": "https://www.gutenberg.org/cache/epub/1228/pg1228.txt",
+    "format": "text",
+    "rights": "公版英文原著节选；按历史文本评分，不视作当代完整科学论述",
+    "source_sha256": "ededa9c0bf8761efed092c303b46c1c92de956838cba6249a33bedfd6d7363b4",
+    "cached_at": "2026-09-12T14:47:32.774968+00:00",
+    "excerpts": [
+      {
+        "case_id": "E08",
+        "section": "Chapter III·Struggle for Existence",
+        "normalized_source_offset": 124394,
+        "length": 524,
+        "quote_sha256": "2f96b980d09a6418673a26c9a9a3196b393bfcae72b9e89913d796cdfdf04fff",
+        "verbatim_match": true
+      },
+      {
+        "case_id": "T08",
+        "section": "Chapter IV·small inherited modifications",
+        "normalized_source_offset": 184361,
+        "length": 454,
+        "quote_sha256": "bc539aafde8c77ca4574cdb40f8a0b435ff29baba7dc8e9444fafc5f7ab68b61",
+        "verbatim_match": true
+      }
+    ]
+  }
+}

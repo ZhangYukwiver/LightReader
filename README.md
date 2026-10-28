@@ -67,6 +67,8 @@ cd LightReader
 
 `app/src/test` 中保留了可从主方法运行的 DOCX/AI smoke check；它们不是 JUnit 测试，因此不会被 Gradle 的 `test` 任务自动发现。
 
+AI 阅读助手另有 [24 段真实阅读材料评测](eval/README.md)，覆盖解释、翻译和追问，预先定义评分标准，并支持用 DeepSeek V4 Flash 记录 0.1.3 纯文本调整前后的真实输出、典型失败与响应耗时。
+
 首次启动后：
 
 1. 点击“导入”，从系统文件选择器选择 TXT 或 DOCX。
