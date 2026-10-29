@@ -165,7 +165,7 @@
     .search-hit.active { outline: 2px solid var(--accent); outline-offset: 2px; }
     footer {
       grid-row: 4;
-      display: grid; grid-template-columns: 1fr 1fr 1.2fr;
+      display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.3fr) minmax(0, 1fr);
       gap: 8px; padding: 8px 12px calc(8px + max(var(--native-bottom-inset), env(safe-area-inset-bottom)));
       border-top: 1px solid var(--line); background: var(--card);
     }
@@ -198,8 +198,12 @@
       border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink);
     }
     .sheet-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-    .sheet-actions button { padding: 0 18px; border-radius: 11px; }
-    .sheet-actions .save { background: var(--accent); color: var(--paper); }
+    /* Equal-width buttons per row; a row that cannot fit wraps instead of squeezing labels. */
+    .sheet-actions button {
+      flex: 1 1 0; min-width: max-content; padding: 0 14px;
+      border: 1px solid var(--line); border-radius: 11px; background: var(--paper); font-size: 15px;
+    }
+    .sheet-actions .save { border-color: var(--accent); background: var(--accent); color: var(--paper); }
     #noteBinding { position: sticky; top: 0; z-index: 3; padding: 8px; background: var(--accent-soft); }
     #noteBinding[hidden] { display: none; }
     #noteBinding button { margin-left: 8px; }
@@ -290,57 +294,68 @@
     .ai-answer-preview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
     .ai-expand-answer { display: block; min-height: 36px; padding: 4px 0; color: var(--accent); font-size: 13px; }
     .ai-options { font-size: 13px; }
-    .ai-options > button { color: var(--accent); }
     .ai-composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
     .ai-composer .form-row { min-width: 0; }
     .ai-composer .save { min-height: 44px; margin-bottom: 10px; padding: 0 14px; border-radius: 10px; background: var(--accent); color: var(--paper); }
-    #aiSheet.reading-help { bottom: var(--native-ime-inset); max-height: calc(100% - var(--native-ime-inset) - var(--native-top-inset)); }
-    #aiSheet.reading-help .ai-sheet { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px max(12px, var(--native-bottom-inset)); overflow: hidden; }
-    #aiSheet.reading-help .ai-head, #aiSheet.reading-help .ai-context, #aiSheet.reading-help .ai-composer { flex: none; }
+    /* Fixed head and composer; only the message list flexes, so a short dock never pushes the composer off-screen. */
+    #aiSheet { bottom: var(--native-ime-inset); max-height: calc(100% - var(--native-ime-inset) - var(--native-top-inset)); }
+    #aiSheet .ai-sheet { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px max(12px, var(--native-bottom-inset)); overflow: hidden; }
+    #aiSheet .ai-head, #aiSheet .ai-context, #aiSheet .ai-composer, #aiChannelStatus { flex: none; }
+    #aiSheet .ai-head h2 { margin-right: auto; font-size: 17px; }
+    #aiChannelStatus { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #aiSheet.reading-help #aiChannelStatus { display: none; }
-    #aiSheet.reading-help .ai-context { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    #aiSheet.reading-help .ai-messages { flex: 1; min-height: 50px; max-height: none; overscroll-behavior: contain; }
+    #aiSheet .ai-context { margin: 0; max-height: 5.5em; overflow: auto; }
+    #aiSheet.reading-help .ai-context { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #aiSheet .ai-messages { flex: 1; min-height: 50px; max-height: none; overscroll-behavior: contain; }
     #aiSheet.reading-help .ai-message.assistant { margin-right: 0; }
-    #aiSheet.reading-help .ai-composer .form-row { margin: 0; }
-    #aiSheet.reading-help .ai-composer label { display: none; }
-    #aiSheet.reading-help #aiPrompt { min-height: 44px; height: 44px; max-height: 100px; resize: none; padding: 10px; }
-    #aiSheet.reading-help .ai-composer .save { margin: 0; }
-    #aiSheet.reading-help .ai-options { flex: none; max-height: 35%; overflow: auto; }
-    #aiSheet.reading-help .ai-options summary { padding: 2px 0; }
-    #aiPrompt { min-height: 76px; }
-    .ai-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
-    .ai-toolbar .check-row { flex: 1; }
+    #aiSheet .ai-composer .form-row { margin: 0; }
+    #aiSheet .ai-composer label { display: none; }
+    #aiPrompt, #aiPagePrompt { min-height: 44px; max-height: 120px; resize: none; padding: 10px 12px; field-sizing: content; }
+    #aiSheet .ai-composer .save { margin: 0; }
+    #aiSheet .ai-options { flex: none; max-height: 35%; overflow: auto; }
+    #aiSheet .ai-options summary { padding: 2px 0; }
+    .ai-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+    .ai-toolbar .check-row, .ai-page-toolbar .check-row { flex: 1; min-height: 36px; white-space: nowrap; }
     .ai-toolbar select { min-height: 36px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
     .ai-channel-select { max-width: 44%; }
+    .ai-page { bottom: var(--native-ime-inset); min-height: 0; max-height: calc(100% - var(--native-ime-inset) - var(--native-top-inset)); }
     .ai-page[hidden] { display: none; }
     .ai-page-panel {
-      display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
+      display: grid; grid-template-rows: auto auto minmax(0, 1fr) minmax(0, auto);
       padding: 0; overflow: hidden;
     }
     .ai-page-head {
       display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
-      min-height: 60px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--card);
+      min-height: 48px; padding: 2px 10px; border-bottom: 1px solid var(--line); background: var(--card);
     }
-    .ai-page-head h2 { margin: 0; font-size: 18px; text-align: center; }
+    .ai-page-head h2 { margin: 0; font-size: 17px; text-align: center; }
     .ai-page-head button { min-height: 42px; padding: 0 8px; color: var(--accent); font-size: 14px; font-weight: 700; }
+    .ai-page-head button:first-child { justify-self: start; }
     .ai-page-head button:last-child { justify-self: end; }
-    .ai-page-status { min-height: 38px; padding: 7px 18px 0; border-bottom: 1px solid var(--line); background: var(--paper); }
-    .ai-page-status .hint { max-width: 760px; margin: 0 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ai-page-messages { min-height: 0; overflow: auto; padding: 16px 18px 22px; overscroll-behavior: contain; }
+    .ai-page-status {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px;
+      padding: 6px max(16px, calc((100% - 760px) / 2)); border-bottom: 1px solid var(--line); background: var(--paper);
+    }
+    .ai-page-status .hint { grid-column: 1; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #contextHistoryButton {
+      grid-column: 2; grid-row: 1 / span 2; min-height: 34px; padding: 0 10px;
+      border-radius: 9px; background: var(--accent-soft); color: var(--accent); font-size: 13px; white-space: nowrap;
+    }
+    .ai-page-messages { min-height: 0; overflow: auto; padding: 12px 16px 16px; overscroll-behavior: contain; }
     .ai-page-messages > .hint { max-width: 760px; margin: 28px auto; text-align: center; }
     .ai-page-messages .ai-message { max-width: 760px; margin-right: auto; margin-left: auto; }
     .ai-page-messages .ai-message.user { margin-left: max(16%, calc((100% - 760px) / 2 + 48px)); }
-    .ai-page-composer { padding: 10px 18px calc(12px + max(var(--native-ime-inset), env(safe-area-inset-bottom))); border-top: 1px solid var(--line); background: var(--card); }
-    .ai-page-composer-inner { width: min(760px, 100%); margin: 0 auto; }
-    .ai-page-composer .form-row { margin: 0; }
-    .ai-page-composer textarea { width: 100%; resize: vertical; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); outline: none; }
+    .ai-page-composer { overflow: auto; padding: 8px 16px calc(8px + max(var(--native-bottom-inset), env(safe-area-inset-bottom))); border-top: 1px solid var(--line); background: var(--card); }
+    /* Prompt and send share one row; channel options sit underneath. */
+    .ai-page-composer-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 6px 8px; width: min(760px, 100%); margin: 0 auto; }
+    .ai-page-composer .form-row { grid-column: 1; grid-row: 1; margin: 0; }
+    .ai-page-composer .form-row label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .ai-page-composer textarea { width: 100%; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); outline: none; }
     .ai-page-composer textarea:focus { border-color: var(--accent); }
-    #aiPagePrompt { min-height: 82px; }
-    .ai-page-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
-    .ai-page-toolbar .check-row { flex: 1; }
+    .ai-page-toolbar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .ai-page-toolbar select { min-height: 36px; max-width: 44%; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
-    .ai-page-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
-    .ai-page-actions button { min-height: 42px; padding: 0 18px; border-radius: 11px; }
+    .ai-page-actions { grid-column: 2; grid-row: 1; display: flex; }
+    .ai-page-actions button { min-height: 44px; padding: 0 16px; border-radius: 11px; }
     .ai-page-actions .save { background: var(--accent); color: var(--paper); }
     .danger { color: #a04437 !important; }
     .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -359,6 +374,7 @@
     }
     #footerZoom[hidden] { display: none; }
     #footerZoom button { flex: 1; min-width: 0; min-height: 40px; padding: 0 4px; border-radius: 10px; color: var(--accent); font-weight: 750; }
+    #footerZoom #docxZoomReset { flex: 1.6; font-size: 13px; }
     #footerZoom button:active { background: var(--accent-soft); }
     #toast {
       position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 50;
@@ -510,10 +526,10 @@
       </div>
       <div class="ai-page-composer">
         <div class="ai-page-composer-inner">
-          <div class="form-row"><label for="aiPagePrompt">问题</label><textarea id="aiPagePrompt" maxlength="12000" placeholder="向 AI 提问…"></textarea></div>
+          <div class="form-row"><label for="aiPagePrompt">问题</label><textarea id="aiPagePrompt" rows="1" maxlength="12000" placeholder="向 AI 提问…"></textarea></div>
           <div class="ai-page-toolbar">
             <select id="aiPageChannelSelect" class="ai-channel-select" aria-label="AI 渠道" onchange="selectAiChannel(this.value)"><option value="">未配置渠道</option></select>
-            <label class="check-row"><input id="aiPageWebSearch" type="checkbox">联网搜索（当前渠道支持时）</label>
+            <label class="check-row"><input id="aiPageWebSearch" type="checkbox">联网搜索</label>
           </div>
           <div class="ai-page-actions"><button class="save" type="button" onclick="sendAiPage()">发送</button></div>
         </div>
@@ -524,22 +540,21 @@
   <div id="aiSheet" class="ai-dock" hidden>
     <div class="ai-resize-handle" role="separator" aria-orientation="horizontal" aria-label="调整 AI 对话窗口高度" tabindex="0"></div>
     <section class="sheet ai-sheet" role="dialog" aria-modal="false" aria-labelledby="aiTitle">
-      <div class="ai-head"><h2 id="aiTitle">AI 助手</h2><button type="button" onclick="closeAiChat()">收起</button></div>
+      <div class="ai-head"><h2 id="aiTitle">AI 助手</h2><button type="button" aria-label="打开 AI 渠道设置" onclick="openAiSettings()">设置</button><button type="button" onclick="closeAiChat()">收起</button></div>
       <p id="aiChannelStatus" class="hint">正在读取 AI 渠道…</p>
       <div id="aiContext" class="ai-context" hidden></div>
       <div id="aiMessages" class="ai-messages"><p class="hint">可以直接提问，也可以先选中文字再点击“讲解”或“翻译”。</p></div>
       <div class="ai-composer">
-        <div class="form-row"><label for="aiPrompt">问题</label><textarea id="aiPrompt" aria-label="围绕选文追问" maxlength="12000" placeholder="和文档内容对话…"></textarea></div>
+        <div class="form-row"><label for="aiPrompt">问题</label><textarea id="aiPrompt" rows="1" aria-label="围绕选文追问" maxlength="12000" placeholder="和文档内容对话…"></textarea></div>
         <button class="save" type="button" onclick="sendAi()">发送</button>
       </div>
       <details id="aiOptions" class="ai-options" open>
         <summary>选项</summary>
         <div class="ai-toolbar">
         <select id="aiChannelSelect" class="ai-channel-select" aria-label="AI 渠道" onchange="selectAiChannel(this.value)"><option value="">未配置渠道</option></select>
-        <label class="check-row"><input id="aiWebSearch" type="checkbox">联网搜索（当前渠道支持时）</label>
+        <label class="check-row"><input id="aiWebSearch" type="checkbox">联网搜索</label>
         <select id="aiTarget" aria-label="翻译目标语言"><option value="简体中文">中文</option><option value="English">English</option><option value="日本語">日本語</option></select>
         </div>
-        <button type="button" onclick="openAiSettings()">渠道设置</button>
       </details>
     </section>
   </div>
@@ -1836,12 +1851,22 @@
       const ratio = readingProgressRatio();
       state.editing = true;
       renderDocument();
-      doc.contentEditable = 'true';
+      prepareDocxEditing();
       setEditingUi(true);
       requestAnimationFrame(() => {
         const maxScroll = Math.max(0, reader.scrollHeight - reader.clientHeight);
         setReaderScrollTop(Math.round(maxScroll * ratio));
       });
+    }
+
+    function prepareDocxEditing() {
+      // Give each cell its own editing host. Android IME composition in a shared
+      // host can otherwise resolve an empty-cell boundary into the preceding cell.
+      doc.querySelectorAll('table').forEach(table => {
+        table.contentEditable = 'false';
+        table.querySelectorAll('td, th').forEach(cell => { cell.contentEditable = 'true'; });
+      });
+      doc.contentEditable = 'true';
     }
 
     // Editable DOM can lose the "text nodes concatenate to state.text" invariant that
@@ -1879,12 +1904,13 @@
       doc.removeAttribute('contenteditable');
       doc.querySelectorAll('mark.annotation, span.search-hit')
         .forEach(el => el.replaceWith(...el.childNodes));
+      doc.querySelectorAll('table, td, th').forEach(element => element.removeAttribute('contenteditable'));
       normalizeDocxDom(doc);
       doc.normalize();
       const text = doc.textContent;
       const html = doc.innerHTML;
       if (html.length > 5 * 1024 * 1024) {
-        doc.contentEditable = 'true';
+        prepareDocxEditing();
         return showToast('文档过大，无法保存');
       }
       state.notes = reanchorNotes(text);
@@ -1900,7 +1926,7 @@
       }));
       if (saved === false) {
         state.editing = true;
-        doc.contentEditable = 'true';
+        prepareDocxEditing();
         setEditingUi(true);
         return showToast('修改未保存，内容仍保留在编辑区，请重试保存');
       }
