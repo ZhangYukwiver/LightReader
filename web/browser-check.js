@@ -1,0 +1,87 @@
+async (page) => {
+  const context = await page.context().browser().newContext();
+  try {
+  page = await context.newPage();
+  const checks = [], errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const check = (condition, message) => { if (!condition) throw new Error(message); checks.push(message); };
+  const upload = async (file) => {
+    await page.locator('#web-file-input').setInputFiles('output/playwright/fixtures/' + file);
+    await page.waitForFunction(name => state.title === name && !state.loading, file);
+  };
+  await page.goto('http://127.0.0.1:4173/');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: 'output/playwright/home-desktop.png' });
+  await upload('阅读测试.txt');
+  check(await page.locator('#document').innerText().then(text => text.includes('第一章 阅读测试')), 'TXT browser file input import');
+  await page.locator('#searchButton').click();
+  await page.locator('#searchInput').fill('轻阅');
+  check(await page.locator('#searchCount').innerText() === '1/1', 'TXT search');
+  await page.getByRole('button', { name: '关闭搜索', exact: true }).click();
+  await page.evaluate(() => {
+    const node = [...document.querySelectorAll('.txt-chapter-body')][0].firstChild;
+    const range = document.createRange(); range.setStart(node, 0); range.setEnd(node, 10);
+    const selection = getSelection(); selection.removeAllRanges(); selection.addRange(range);
+    document.dispatchEvent(new Event('selectionchange'));
+  });
+  await page.locator('#selectionNoteButton').click();
+  await page.locator('#noteText').fill('网页端持久化批注测试');
+  await page.locator('#noteEditor button.save').click();
+  check(await page.locator('#notesButton').innerText() === '批注 1', 'selection annotation saved');
+  await page.evaluate(() => { reader.scrollTop = reader.scrollHeight * 0.55; });
+  await page.waitForFunction(() => reader.scrollTop > 100);
+  await page.evaluate(() => flushReadingProgress());
+  await page.screenshot({ path: 'output/playwright/reading-desktop.png' });
+  await page.reload();
+  await page.locator('.recent-item').filter({ hasText: '阅读测试.txt' }).click();
+  await page.waitForFunction(() => state.title === '阅读测试.txt' && !state.restoringProgress);
+  check(await page.locator('#notesButton').innerText() === '批注 1', 'annotation survives reload');
+  check(await page.evaluate(() => reader.scrollTop > 100), 'reading progress survives reload');
+  await page.locator('#notesButton').click();
+  const jsonDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: '备份 JSON', exact: true }).click();
+  const json = await jsonDownload; await json.saveAs('output/playwright/notes-backup.json');
+  check(json.suggestedFilename().endsWith('.json'), 'notes JSON downloads');
+  await page.locator('#notesSheet').getByRole('button', { name: '完成', exact: true }).click();
+  await upload('Word测试.docx');
+  check(await page.locator('#document table td').count() === 2, 'DOCX table renders');
+  check(await page.locator('#document script').count() === 0, 'DOCX markup stays text');
+  await page.locator('#displayButton').click();
+  await page.locator('#document td').nth(1).click();
+  // Select within the cell explicitly; browser editing hosts differ for Select All.
+  await page.evaluate(() => { const range = document.createRange(); range.selectNodeContents(document.querySelectorAll('#document td')[1]); getSelection().removeAllRanges(); getSelection().addRange(range); });
+  await page.keyboard.insertText('修改后的表格内容');
+  await page.locator('#displayButton').click();
+  check(await page.evaluate(() => !state.editing && state.text.includes('修改后的表格内容')), 'DOCX cell edit saved');
+  const wordDownload = page.waitForEvent('download');
+  await page.locator('#exportButton').click();
+  const word = await wordDownload; await word.saveAs('output/playwright/edited.docx');
+  check(word.suggestedFilename().endsWith('.docx'), 'edited DOCX downloads');
+  await page.reload();
+  await page.locator('.recent-item').filter({ hasText: 'Word测试.docx' }).click();
+  await page.waitForFunction(() => state.title === 'Word测试.docx');
+  check(await page.locator('#document').innerText().then(text => text.includes('修改后的表格内容')), 'DOCX draft survives reload');
+  await page.screenshot({ path: 'output/playwright/docx-desktop.png' });
+  await upload('check.pdf');
+  await page.waitForFunction(() => state.pdf?.pages[0].rendered);
+  check(await page.locator('.pdf-page').count() === 4, 'real PDF renders four pages');
+  await page.getByRole('button', { name: '添加当前页批注', exact: true }).click();
+  await page.locator('#noteText').fill('PDF 中文整页批注');
+  await page.locator('#noteEditor button.save').click();
+  const pdfDownload = page.waitForEvent('download');
+  await page.locator('#exportButton').click();
+  const pdf = await pdfDownload; await pdf.saveAs('output/playwright/annotated.pdf');
+  check(pdf.suggestedFilename().endsWith('-含批注.pdf'), 'annotated PDF downloads');
+  await page.reload();
+  await page.locator('.recent-item').filter({ hasText: 'check.pdf' }).click();
+  await page.waitForFunction(() => state.format === 'PDF' && !state.loading);
+  check(await page.locator('#notesButton').innerText() === '批注 1', 'PDF note survives reload');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: 'output/playwright/pdf-mobile.png' });
+  check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'mobile has no horizontal page overflow');
+  await page.locator('#homeButton').click();
+  await page.screenshot({ path: 'output/playwright/home-mobile.png' });
+  check(errors.length === 0, 'no browser page errors: ' + errors.join('; '));
+  return { passed: checks.length, checks };
+  } finally { await context.close(); }
+}

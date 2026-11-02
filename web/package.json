@@ -1,0 +1,24 @@
+{
+  "name": "lightreader-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && node server.mjs",
+    "start": "node server.mjs",
+    "prepare:embedding": "node prepare-embedding.mjs",
+    "check": "node --check build.mjs && node --check prepare-embedding.mjs && node --check server.mjs && node --check web-bridge.js && node --check web-docx.js && node --check web-ui.js && node --check ../app/src/main/assets/reader-book.js && node --check ../app/src/main/assets/reader-rag.js && node --check ../app/src/main/assets/reader-embedding.js && node --check ../app/src/main/assets/reader-embedding-worker.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "fflate": "0.8.2",
+    "js-sha256": "0.11.1"
+  },
+  "overrides": {
+    "sharp": "0.35.5"
+  }
+}

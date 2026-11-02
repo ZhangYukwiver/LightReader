@@ -1,0 +1,105 @@
+:root { --web-sidebar: 236px; }
+body.web-app { grid-template-columns: var(--web-sidebar) minmax(0, 1fr); }
+.web-app > header, .web-app > #reader, .web-app > #searchBar, .web-app > footer { grid-column: 2; }
+.web-app button, .web-brand { cursor: pointer; }
+.web-app button:focus-visible, .web-app a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.web-app button:disabled { cursor: default; }
+.web-app header { min-height: 76px; padding: 12px 28px; gap: 8px; }
+.web-app header button { border-radius: 8px; font-size: 14px; }
+.web-app header button:hover { background: var(--accent-soft); }
+.web-app .title strong { font-size: 15px; font-weight: 600; }
+.web-app header .title small { margin-top: 4px; }
+.web-app footer { padding: 10px 32px; gap: 16px; font-size: 14px; background: var(--paper); }
+.web-app footer button { min-height: 40px; }
+.web-sidebar { grid-column: 1; grid-row: 1 / 5; display: flex; flex-direction: column; padding: 36px 20px 28px; border-right: 1px solid var(--line); background: color-mix(in srgb, var(--paper) 95%, var(--accent) 5%); }
+.web-brand { display: flex; gap: 12px; align-items: center; padding: 0 14px; color: var(--ink); text-decoration: none; font-family: ui-serif, 'Songti SC', serif; font-size: 25px; font-weight: 700; }
+.web-brand > span { width: 42px; height: 44px; color: var(--accent); }
+.web-brand small { display: block; margin-top: 4px; font: 9px system-ui; letter-spacing: 2px; color: var(--muted); }
+.web-import { display: flex; align-items: center; gap: 6px; margin: 38px 0 24px; padding: 0 14px; border-radius: 9px; background: var(--accent); color: var(--card); font-size: 14px; }
+.web-import > span { font-size: 22px; font-weight: 300; }
+.web-import kbd { margin-left: auto; font: 10px system-ui; opacity: .65; }
+.web-sidebar nav { display: grid; gap: 7px; }
+.web-sidebar nav button { display: flex; gap: 12px; align-items: center; text-align: left; padding: 0 15px; border-radius: 8px; color: var(--muted); font-size: 14px; }
+.web-sidebar nav button > span { width: 20px; text-align: center; font-size: 22px; }
+.web-sidebar nav button.active, .web-sidebar nav button:hover { color: var(--accent); background: var(--accent-soft); }
+#webFileCount { margin-left: auto; font: 12px ui-monospace, monospace; }
+.web-current { margin: 34px 14px; padding-top: 23px; border-top: 1px solid var(--line); }
+.web-current > span { color: var(--muted); font-size: 11px; }
+.web-current strong { display: block; margin: 12px 0 3px; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; font-weight: 500; }
+.web-current button { padding: 0; color: var(--accent); font-size: 12px; }
+.web-sidebar-bottom { margin-top: auto; padding: 36px 12px 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.web-sidebar-bottom p { margin: 8px 0 25px; }
+.web-sidebar-bottom small { font-size: 10px; opacity: .75; }
+.web-local-dot { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent); }
+.web-app #document.home { max-width: 1140px; padding: 42px 56px 56px; }
+.web-app .home-view { padding: 0; }
+.web-app .home-view > h1 { margin: 40px 0 8px; font-size: 20px; font-weight: 600; }
+.web-app .home-view > .hint { font-size: 13px; margin: 0 0 24px; }
+.web-welcome { position: relative; min-height: 280px; padding: 15px 0 24px; overflow: hidden; border-bottom: 1px solid var(--line); }
+.web-eyebrow { font-size: 10px; letter-spacing: 3px; color: var(--accent); font-weight: 600; }
+.web-welcome h2 { margin: 22px 0 14px; font-family: ui-serif, 'Songti SC', serif; font-size: clamp(27px, 3vw, 38px); font-weight: 500; letter-spacing: 2px; }
+.web-welcome p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.9; }
+.web-formats { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 30px; font-size: 10px; letter-spacing: .4px; font-weight: 650; }
+.web-formats i { font-size: 11px; margin-left: 6px; color: var(--muted); font-style: normal; font-weight: 400; }
+.web-book-art { position: absolute; width: 230px; height: 240px; top: 5px; right: 14px; transform: rotate(10deg); pointer-events: none; }
+.web-book-front { position: absolute; top: 10px; right: 20px; width: 137px; height: 190px; padding: 23px 22px; border-left: 5px solid #92ab92; border-radius: 2px 5px 5px 2px; color: #476653; background: #c9d4bd; box-shadow: 12px 15px 0 -10px #e5e4d8, 20px 24px 36px #34462f16; }
+.web-book-front > span { font-family: ui-serif, 'Songti SC', serif; font-size: 22px; }
+.web-book-front i { display: block; margin-top: 12px; font: 9px/1.6 ui-serif, serif; letter-spacing: 1.2px; }
+.web-book-front svg { width: 27px; position: absolute; bottom: 18px; right: 18px; opacity: .65; }
+.web-book-back { position: absolute; width: 140px; height: 185px; top: 33px; left: 34px; transform: rotate(-22deg); background: #ded4bd; border-left: 6px solid #b6ab91; border-radius: 4px; }
+.web-app .home-empty { min-height: 235px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 20px; border: 1px dashed var(--line); border-radius: 14px; background: color-mix(in srgb, var(--card) 60%, transparent); }
+.web-empty-icon { width: 34px; color: var(--accent); opacity: .7; }
+.web-app .home-empty strong { font-size: 16px; font-weight: 500; }
+.web-app .home-empty > span { color: var(--muted); font-size: 12px; }
+.web-app .home-empty button { padding: 0 21px; min-height: 40px; margin: 4px 0; font-size: 13px; border-radius: 8px; background: var(--accent); color: var(--card); }
+.web-app .home-empty small { color: var(--muted); font-size: 10px; }
+.web-app .recent-list { gap: 12px; }
+.web-recent-row { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+.web-app .recent-item { flex: 1; min-width: 0; min-height: 84px; padding: 18px 20px; border: 0; background: transparent; }
+.web-app .recent-item:hover { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
+.web-app .recent-format { color: var(--accent); background: var(--accent-soft); border-radius: 5px; font: 10px system-ui; }
+.web-app .recent-name { font-size: 15px; font-weight: 550; }
+.web-app .recent-meta, .web-app .recent-time { font-size: 11px; }
+.web-file-menu { align-self: stretch; padding: 0 20px; color: var(--muted); font-size: 11px; letter-spacing: 1px; }
+.web-home #searchButton, .web-home #displayButton, .web-home #aiToggle, .web-home footer { display: none; }
+.web-home header #homeButton { display: none; }
+.web-home header .title { grid-column: 1 / -1; }
+.web-home header .title strong { font-weight: 450; }
+.web-home header .title small { display: none; }
+.web-app #document:not(.home):not(.pdf) { padding-top: 55px; }
+.web-app #document.docx { box-shadow: 0 4px 25px #00000004; }
+.web-app #searchBar { padding: 10px 30px; }
+.web-app .sheet-backdrop { align-items: center; justify-items: center; padding: 24px; }
+.web-app .sheet-backdrop > .sheet { width: min(620px, 100%); max-height: 85vh; border-radius: 16px; padding: 25px; }
+.web-app .ai-dock { left: var(--web-sidebar); }
+.web-app .ai-dock .sheet { max-width: 900px; margin: auto; }
+.web-drop { position: fixed; z-index: 100; inset: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; border: 2px dashed var(--accent); border-radius: 18px; background: color-mix(in srgb, var(--paper) 96%, transparent); color: var(--accent); pointer-events: none; }
+.web-drop[hidden] { display: none; }
+.web-drop svg { width: 65px; }
+.web-drop strong { font: 32px ui-serif, 'Songti SC', serif; }
+.web-drop span { font-size: 13px; letter-spacing: 2px; }
+@media (max-width: 1150px) { .web-book-art { right: -45px; opacity: .65; transform: rotate(10deg) scale(.8); } .web-welcome h2, .web-welcome p, .web-formats { position: relative; z-index: 1; } .web-app #document.home { padding: 32px; } }
+@media (max-width: 900px) { :root { --web-sidebar: 190px; } .web-sidebar { padding-left: 12px; padding-right: 12px; } .web-book-art { display: none; } .web-app header { padding: 10px; gap: 0; } .web-import kbd { display: none; } .web-app .recent-time { display: none; } }
+@media (max-width: 680px) {
+  :root { --web-sidebar: 0px; }
+  .web-app > .web-sidebar { display: none; }
+  .web-app > header { min-height: 62px; }
+  .web-home header #homeButton, .web-home #displayButton, .web-home #aiToggle { display: block; }
+  .web-home header .title { grid-column: auto; }
+  .web-app #document.home { padding: 25px 22px 40px; }
+  .web-welcome { min-height: auto; padding: 12px 0 28px; }
+  .web-welcome h2 { font-size: 27px; letter-spacing: 1px; }
+  .web-welcome p { font-size: 13px; }
+  .web-formats { gap: 14px; }
+  .web-formats i { display: none; }
+  .web-app .home-view > h1 { margin-top: 27px; }
+  .web-app .home-empty { padding: 25px 12px; text-align: center; }
+  .web-app .home-empty small { max-width: 260px; line-height: 1.8; }
+  .web-app .recent-item { padding: 14px 10px; gap: 10px; }
+  .web-app .recent-name { font-size: 13px; }
+  .web-file-menu { padding: 0 13px; }
+  .web-app .sheet-backdrop { align-items: end; padding: 0; }
+  .web-app .sheet-backdrop > .sheet { width: 100%; border-radius: 18px 18px 0 0; padding: 20px; }
+  .web-app footer { padding: 8px 10px; gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) { .web-app * { scroll-behavior: auto !important; transition: none !important; } }

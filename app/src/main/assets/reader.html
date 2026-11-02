@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <title>轻阅</title>
+  <link rel="stylesheet" href="reader-pdf.css">
   <style>
     :root {
       color-scheme: light;
@@ -188,6 +189,15 @@
       background: #0007;
     }
     .sheet-backdrop[hidden] { display: none; }
+    #aiSettingsSheet { z-index: 32; }
+    .book-panel { width: min(100%, 820px); }
+    .book-panel progress, #bookQuestion { width: 100%; }
+    .book-panel summary { padding: 12px 0; cursor: pointer; color: var(--accent); }
+    .book-panel details details { border-top: 1px solid var(--line); }
+    .book-panel details button { padding: 8px; color: var(--accent); text-align: left; }
+    .book-panel blockquote { margin: 8px 0; padding: 10px; border-left: 2px solid var(--line); max-height: 240px; overflow: auto; }
+    .book-text, #bookInfo { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+    #bookResult:not(:empty) { border-top: 1px solid var(--line); padding: 16px 0; }
     .sheet {
       max-height: 78vh; overflow: auto; padding: 18px 18px calc(20px + env(safe-area-inset-bottom));
       border-radius: 22px 22px 0 0; background: var(--card); box-shadow: 0 -10px 40px #0003;
@@ -417,7 +427,7 @@
   <main id="reader">
     <div id="noteBinding" hidden role="status"><span>请选择新的原文，再点击“绑定批注”。</span><button type="button" onclick="cancelNoteBinding()">取消定位</button></div>
     <article id="document" class="home" aria-label="最近打开的文件">
-      <div class="home-view"><div class="home-empty"><span>暂无最近打开的文件</span><button type="button" onclick="openTextFile()">导入 TXT / DOCX</button></div></div>
+      <div class="home-view"><div class="home-empty"><span>暂无最近打开的文件</span><button type="button" onclick="openTextFile()">导入 TXT / DOCX / PDF</button></div></div>
     </article>
   </main>
 
@@ -520,6 +530,7 @@
       <div class="ai-page-status"><p id="aiPageChannelStatus" class="hint">正在读取 AI 渠道…</p>
         <p id="aiHistoryHint" class="hint">打开文档后，对话会随文档保存在本机。</p>
         <button id="contextHistoryButton" type="button" onclick="openAiChat(true)">查看选文对话</button>
+        <button type="button" onclick="ReaderBookUI.open()">整本书分析</button>
       </div>
       <div id="aiPageMessages" class="ai-page-messages" role="log" aria-live="polite">
         <p class="hint">直接输入问题，开始与 AI 对话。</p>
@@ -580,10 +591,63 @@
     </section>
   </div>
 
+  <div id="bookSheet" class="sheet-backdrop" hidden onclick="backdropClose(event)">
+    <section class="sheet book-panel" role="dialog" aria-modal="true" aria-labelledby="bookTitle">
+      <div class="ai-head"><h2 id="bookTitle">整本书分析</h2><button type="button" onclick="closeSheet('bookSheet')">收起</button></div>
+      <p id="bookInfo" class="hint"></p>
+      <p class="hint">开始后会分段发送全文至所选 AI 渠道，可能产生多次调用费用。保持阅读器打开可连续分析；切换文档或关闭页面后，回到此处继续。</p>
+      <p id="bookStatus" role="status" aria-live="polite"></p>
+      <progress id="bookProgress" max="1" value="0" aria-label="全文读取进度"></progress>
+      <div class="sheet-actions">
+        <button type="button" onclick="openAiSettings()">AI 渠道</button>
+        <button id="bookStart" class="save" type="button" onclick="ReaderBookUI.start()">开始分析</button>
+        <button id="bookPause" type="button" hidden onclick="ReaderBookUI.pause()">暂停</button>
+        <button id="bookRestart" type="button" hidden onclick="ReaderBookUI.start(true)">重新分析</button>
+        <button id="bookExport" type="button" hidden onclick="ReaderBookUI.exportReport()">导出分析</button>
+      </div>
+      <p id="bookError" class="hint" role="alert" hidden></p>
+      <div id="bookResult" class="book-text"></div>
+      <details id="bookSources" hidden><summary>分段分析与原文定位</summary><div id="bookChunks"></div></details>
+      <div id="bookAsk" hidden>
+        <p id="bookKnowledgeStatus" role="status" aria-live="polite"></p>
+        <p id="bookSemanticStatus" class="hint" role="status" aria-live="polite"></p>
+        <div class="sheet-actions">
+          <button id="bookSemanticPause" type="button" hidden onclick="ReaderBookUI.pauseSemantic()">暂停语义建库</button>
+          <button id="bookSemanticResume" type="button" hidden onclick="ReaderBookUI.buildSemantic()">继续语义建库</button>
+        </div>
+        <div class="sheet-actions"><button id="bookKnowledgeRetry" type="button" hidden onclick="ReaderBookUI.buildKnowledge(true)">重建知识库</button></div>
+        <details id="bookKnowledgeSearch" hidden>
+          <summary>查看本书知识库</summary>
+          <div class="form-row"><label for="bookSearchQuery">检索原文（本地执行）</label>
+            <input id="bookSearchQuery" maxlength="300" placeholder="输入术语、人物或事件"></div>
+          <div class="sheet-actions"><button id="bookSearchButton" type="button" onclick="ReaderBookUI.searchKnowledge()">检索知识库</button></div>
+          <div id="bookSearchResults"></div>
+        </details>
+        <label for="bookQuestion">围绕这本书提问</label>
+        <p class="hint">先从本书知识库检索原文，再结合概要回答。语义向量就绪后使用语义＋关键词混合检索；构建中或模型不可用时使用关键词检索，实际来源可展开核对。</p>
+        <textarea id="bookQuestion" rows="2" maxlength="1000" placeholder="例如：作者如何论证核心观点？"></textarea>
+        <div class="sheet-actions"><button id="bookSend" type="button" onclick="ReaderBookUI.ask()">提问</button></div>
+        <div id="bookAnswers"></div>
+      </div>
+    </section>
+  </div>
+
   <div id="toast" role="status" aria-live="polite"></div>
 
   <script src="reader-notes.js"></script>
+  <script src="reader-pdf.js"></script>
+  <script src="reader-pdf-export.js"></script>
+  <script src="reader-rag.js"></script>
+  <script src="reader-embedding.js"></script>
+  <script src="reader-book.js"></script>
   <script>
+    // Preserve reading preferences when moving from file:// to the local HTTPS origin.
+    try {
+      const legacy = JSON.parse(window.ReaderBridge?.getLegacyReaderSettings?.() || '{}');
+      for (const key of ['reader-font-size', 'reader-line-height', 'reader-paragraph-spacing', 'reader-theme']) {
+        if (typeof legacy[key] === 'string' && localStorage.getItem(key) === null) localStorage.setItem(key, legacy[key]);
+      }
+    } catch (_) { /* Defaults still work if WebView storage is unavailable. */ }
     const state = {
       title: '', text: '', notes: [], recentFiles: [], recentActionUri: '', selection: null, draftSelection: null, editingId: null,
       hits: [], hitIndex: -1, ai: { selectedId: '', channels: [] }, aiMessages: [], aiPageMessages: [],
@@ -625,7 +689,7 @@
         .map(file => ({
           uri: file.uri,
           name: String(file.name || '未命名文件'),
-          format: file.format === 'DOCX' ? 'DOCX' : 'TXT',
+          format: ['DOCX', 'PDF'].includes(file.format) ? file.format : 'TXT',
           noteCount: Number.isFinite(Number(file.noteCount)) ? Math.max(0, Number(file.noteCount)) : 0,
           modified: Boolean(file.modified) || Number(file.noteCount) > 0,
           pinned: Boolean(file.pinned),
@@ -658,7 +722,7 @@
         const message = document.createElement('span');
         message.textContent = '暂无最近打开的文件';
         const importButton = document.createElement('button');
-        importButton.type = 'button'; importButton.textContent = '导入 TXT / DOCX';
+        importButton.type = 'button'; importButton.textContent = '导入 TXT / DOCX / PDF';
         importButton.onclick = openTextFile;
         empty.append(message, importButton); view.append(empty);
       } else {
@@ -1080,6 +1144,7 @@
     }
 
     function resetAiReadingSession() {
+      ReaderBookUI.reset();
       closeAiChat(false);
       state.aiAnchor = null;
       state.aiMessages = [];
@@ -1097,6 +1162,7 @@
       state.documentInfo = data.document;
       if (!data.conversation) return;
       const saved = data.conversation;
+      state.bookAnalysis = saved.bookAnalysis || null;
       const messages = items => (Array.isArray(items) ? items : []).map(message => ({ ...message,
         text: message.role === 'assistant' ? aiPlainText(message.text) : String(message.text || '') }));
       state.aiMessages = messages(saved.messages);
@@ -1105,6 +1171,7 @@
       state.aiPendingId = state.aiMessages.find(message => message.pending)?.id || '';
       state.aiPagePendingId = state.aiPageMessages.find(message => message.pending)?.id || '';
       state.aiPersistenceReady = true;
+      ReaderBookUI.restore();
       state.aiMode = 'chat';
       renderAiMessages(); renderAiPageMessages(); updateAiContext();
     }
@@ -1114,7 +1181,7 @@
       if (!state.aiPersistenceReady) { showToast('文档会话未读取成功，请重新打开文档'); return false; }
       const saved = bridge('saveConversation', state.documentToken, JSON.stringify({
         messages: state.aiMessages, pageMessages: state.aiPageMessages,
-        anchor: state.aiAnchor, contextId: state.aiContextId
+        anchor: state.aiAnchor, contextId: state.aiContextId, bookAnalysis: state.bookAnalysis || null
       }));
       if (saved === false) showToast('会话保存失败，问题仍保留在输入框');
       return saved !== false;
@@ -1130,7 +1197,7 @@
 
     window.handleNativeBack = function() {
       const layeredSheets = ['aiSettingsSheet', 'noteEditor', 'notesSheet', 'settingsSheet',
-        'tocSheet', 'recentActionsSheet', 'docxThemeSheet'];
+        'tocSheet', 'recentActionsSheet', 'docxThemeSheet', 'bookSheet'];
       for (const id of layeredSheets) {
         const sheet = document.getElementById(id);
         if (sheet && !sheet.hidden) { closeSheet(id); return true; }
@@ -1168,6 +1235,7 @@
       renderAiChannelSelect();
       syncAiForm();
       updateAiChannelStatus();
+      ReaderBookUI.render();
     };
 
     function renderAiChannels() {
@@ -1693,6 +1761,7 @@
     window.onAiResult = function(value) {
       const payload = bridgeJson(value);
       if (!payload.id || payload.documentToken !== state.documentToken) return;
+      if (ReaderBookUI.receive(payload)) return;
       // Normalize once at the bridge boundary; rendering, history and notes all use the same plain text.
       if (payload.id === state.aiPagePendingId) {
         const index = state.aiPageMessages.findIndex(message => message.pending && message.id === payload.id);
@@ -1822,6 +1891,7 @@
     }
 
     function onDisplayButton() {
+      if (state.format === 'PDF') return newPdfPageNote();
       if (!state.title) return openSheet('settingsSheet');
       if (state.editing) return saveEdit();
       if (state.format === 'DOCX' && !state.loading) return enterEdit();
@@ -1842,6 +1912,7 @@
 
     function enterEdit() {
       if (state.format !== 'DOCX' || state.loading || state.editing) return;
+      ReaderBookUI.pause();
       toggleSearch(false);
       closeAiPage();
       closeAiChat();
@@ -1938,20 +2009,24 @@
     }
 
     function setDocumentHeader(format, count, loading = false) {
-      const kind = format === 'DOCX' ? 'DOCX' : 'TXT';
+      const kind = ['DOCX', 'PDF'].includes(format) ? format : 'TXT';
+      doc.setAttribute('aria-label', `${kind} 正文`);
       document.getElementById('fileName').textContent = state.title;
       document.getElementById('status').textContent = loading
         ? `${kind} · 正在导入…`
+        : kind === 'PDF' ? `PDF · ${state.pdf?.pages.length || 0} 页 · 长按文字添加批注`
         : `${kind} · ${Number(count || 0).toLocaleString()} 字符`;
       document.getElementById('homeButton').textContent = '返回';
       document.getElementById('homeButton').setAttribute('aria-label', '返回主页');
       document.getElementById('homeButton').onclick = goHome;
-      document.getElementById('displayButton').textContent = '编辑';
-      document.getElementById('displayButton').setAttribute('aria-label', '编辑文档');
+      document.getElementById('displayButton').textContent = kind === 'PDF' ? '整页批注' : '编辑';
+      document.getElementById('displayButton').setAttribute('aria-label', kind === 'PDF' ? '添加当前页批注' : '编辑文档');
       document.getElementById('notesButton').disabled = loading;
       document.getElementById('exportButton').disabled = loading;
-      document.getElementById('exportButton').textContent = `导出 ${kind}`;
-      document.getElementById('tocButton').hidden = kind !== 'TXT' || !state.chapters.length || loading;
+      document.getElementById('exportButton').textContent = kind === 'PDF' ? '导出含批注 PDF' : `导出 ${kind}`;
+      document.getElementById('tocButton').textContent = kind === 'PDF' ? '页码' : '目录';
+      document.getElementById('tocButton').setAttribute('aria-label', kind === 'PDF' ? '选择 PDF 页码' : '打开目录');
+      document.getElementById('tocButton').hidden = (kind !== 'PDF' && (kind !== 'TXT' || !state.chapters.length)) || loading;
       updateDocxZoomUi();
     }
 
@@ -2099,39 +2174,53 @@
     }
 
     function renderToc() {
+      document.getElementById('tocTitle').textContent = state.format === 'PDF' ? '选择页码' : '目录';
       const list = document.getElementById('tocList');
       list.replaceChildren();
-      state.chapters.forEach((chapter, index) => {
+      const chapters = state.format === 'PDF' ? (state.pdf?.pages || []).map(page => ({ title: `第 ${page.number} 页` })) : state.chapters;
+      chapters.forEach((chapter, index) => {
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'toc-item';
-        button.textContent = `${index + 1}. ${chapter.title}`;
+        button.textContent = state.format === 'PDF' ? chapter.title : `${index + 1}. ${chapter.title}`;
         button.onclick = () => jumpToChapter(index);
         list.append(button);
       });
-      document.getElementById('tocButton').hidden = state.format !== 'TXT' || !state.chapters.length || state.loading;
+      document.getElementById('tocButton').hidden = !chapters.length || state.loading;
     }
 
     function openToc() {
-      if (state.format !== 'TXT' || !state.chapters.length) return showToast('当前文件没有可用目录');
+      if (state.loading || (state.format !== 'PDF' && (state.format !== 'TXT' || !state.chapters.length))) return showToast('当前文件没有可用目录');
       renderToc(); openSheet('tocSheet');
     }
 
     function jumpToChapter(index) {
       closeSheet('tocSheet');
+      cancelProgressRestore();
+      if (state.format === 'PDF') return state.pdf?.pages[index]?.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       doc.querySelector(`[data-chapter-index="${index}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function updateDocxZoomUi() {
-      const showZoom = state.format === 'DOCX' && !state.loading && Boolean(state.title);
+      const showZoom = ['DOCX', 'PDF'].includes(state.format) && !state.loading && Boolean(state.title);
       document.getElementById('footerZoom').hidden = !showZoom;
       document.getElementById('settingsButton').hidden = showZoom;
       document.documentElement.style.setProperty('--doc-zoom', String(state.docZoom));
       document.getElementById('docxZoomReset').textContent = `${Math.round(state.docZoom * 100)}%`;
+      document.getElementById('footerZoom').setAttribute('aria-label', `${state.format} 缩放`);
+      document.getElementById('docxZoomReset').setAttribute('aria-label', `还原 ${state.format} 缩放，长按打开主题设置`);
+      state.pdf?.resize(state.docZoom);
     }
 
     function applyDocZoom() {
+      cancelProgressRestore();
       const ratio = readingProgressRatio();
       updateDocxZoomUi();
+      if (state.format === 'PDF') {
+        // PDF page heights are explicit; restore synchronously so a later note/page
+        // jump is not overwritten by an older queued zoom callback.
+        setReaderScrollTop(Math.round(Math.max(0, reader.scrollHeight - reader.clientHeight) * ratio));
+        return;
+      }
       requestAnimationFrame(() => {
         const maxScroll = Math.max(0, reader.scrollHeight - reader.clientHeight);
         setReaderScrollTop(Math.round(maxScroll * ratio));
@@ -2139,17 +2228,17 @@
     }
 
     function adjustDocZoom(delta) {
-      if (state.format !== 'DOCX') return;
+      if (!['DOCX', 'PDF'].includes(state.format)) return;
       state.docZoom = Math.max(.75, Math.min(2.5, Math.round((state.docZoom + delta) * 100) / 100));
       applyDocZoom();
     }
 
     function resetDocZoom() {
-      if (state.format !== 'DOCX') return;
+      if (!['DOCX', 'PDF'].includes(state.format)) return;
       state.docZoom = 1;
       reader.scrollLeft = 0;
       applyDocZoom();
-      showToast('Word 缩放已还原为 100%');
+      showToast(`${state.format === 'PDF' ? 'PDF' : 'Word'} 缩放已还原为 100%`);
     }
 
     let pinchStart = null;
@@ -2159,13 +2248,13 @@
       return Math.hypot(dx, dy);
     }
     doc.addEventListener('touchstart', event => {
-      if (state.format === 'DOCX' && event.touches.length === 2) {
+      if (['DOCX', 'PDF'].includes(state.format) && event.touches.length === 2) {
         pinchStart = { distance: touchDistance(event.touches), zoom: state.docZoom };
         event.preventDefault();
       }
     }, { passive: false });
     doc.addEventListener('touchmove', event => {
-      if (!pinchStart || state.format !== 'DOCX' || event.touches.length < 2) return;
+      if (!pinchStart || !['DOCX', 'PDF'].includes(state.format) || event.touches.length < 2) return;
       const distance = touchDistance(event.touches);
       if (distance > 0) {
         state.docZoom = Math.max(.75, Math.min(2.5,
@@ -2190,7 +2279,90 @@
       else reader.style.removeProperty('scroll-behavior');
     }
 
+    function closePdfDocument() {
+      state.pdf?.close();
+      state.pdf = null;
+      doc.classList.remove('pdf');
+    }
+
+    window.beginPdfDocument = async function(title, notes, progress, token, byteLength) {
+      if (state.loading && state.documentToken === token) return;
+      cancelProgressRestore(); closePdfDocument(); resetAiReadingSession();
+      state.title = String(title || '未命名.pdf'); state.text = ''; state.html = '';
+      state.format = 'PDF'; state.chapters = []; state.notes = []; state.savedNotes = [];
+      state.documentToken = String(token || ''); state.loading = true; state.docZoom = 1;
+      state.selection = null; state.draftSelection = null; state.editingId = null;
+      state.documentInfo = null; state.aiPersistenceReady = false; state.edited = false;
+      cancelNoteBinding(); toggleSearch(false); renderTextLoading();
+      setDocumentHeader('PDF', 0, true); updateNoteCount();
+      const pdf = state.pdf = ReaderPdf.create(doc, reader, showToast, note => showNotes(note));
+      try {
+        if (!Number.isInteger(byteLength) || byteLength < 1 || byteLength > 20 * 1024 * 1024) throw new Error('PDF 文件为空或超过 20 MB');
+        const bytes = new Uint8Array(byteLength);
+        for (let offset = 0; offset < byteLength;) {
+          if (state.pdf !== pdf) return;
+          const encoded = bridge('getPdfChunk', token, offset, Math.min(64 * 1024, byteLength - offset));
+          if (!encoded) throw new Error('PDF 读取中断，请重新打开文件');
+          const chunk = atob(encoded);
+          for (let index = 0; index < chunk.length; index++) bytes[offset + index] = chunk.charCodeAt(index);
+          offset += chunk.length;
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+        await pdf.open(bytes, (page, total) => {
+          if (state.pdf !== pdf) return;
+          document.getElementById('status').textContent = `PDF · 正在加载 ${page}/${total} 页`;
+          const message = doc.querySelector('.loading-view span');
+          if (message) message.textContent = `正在加载 PDF ${page}/${total} 页`;
+        });
+        if (state.pdf !== pdf) return;
+        state.text = pdf.text; state.loading = false;
+        doc.className = 'pdf'; doc.setAttribute('aria-label', 'PDF 正文');
+        state.notes = normalizeNotes(notes); state.savedNotes = structuredNotes();
+        setDocumentHeader('PDF', state.text.length);
+        renderDocument(); syncAnnotationCount(); renderToc(); applySettings();
+        restoreReadingProgress(progress); restoreConversation();
+        if (!state.text.trim()) showToast('此 PDF 没有可选文字，可使用顶部“整页批注”');
+      } catch (error) {
+        if (state.pdf !== pdf) return;
+        closePdfDocument(); state.loading = false;
+        const message = error.name === 'PasswordException' ? '暂不支持加密 PDF，请先解密再导入'
+          : error.name === 'InvalidPDFException' ? 'PDF 文件损坏或格式无效' : error.message || 'PDF 打开失败';
+        doc.className = 'loading'; doc.textContent = message;
+        document.getElementById('status').textContent = 'PDF · 打开失败，请返回后重新导入';
+        showToast(message);
+      }
+    };
+
+    function newPdfPageNote() {
+      if (state.loading || !state.pdf?.pages.length) return;
+      const pageNumber = state.pdf.currentPage();
+      window.getSelection()?.removeAllRanges(); state.selection = null;
+      document.getElementById('selectionBar').hidden = true;
+      state.editingId = null;
+      state.draftSelection = { type: 'pdf-page', pageNumber, start: 0, end: 1,
+        quote: `第 ${pageNumber} 页（整页批注）` };
+      document.getElementById('noteTitle').textContent = `第 ${pageNumber} 页 · 整页批注`;
+      document.getElementById('noteText').value = '';
+      document.getElementById('globalNote').checked = false;
+      document.getElementById('globalNote').disabled = true;
+      document.getElementById('deleteNoteButton').hidden = true;
+      openSheet('noteEditor');
+      setTimeout(() => document.getElementById('noteText').focus(), 80);
+    }
+
+    function updatePdfPageLabels() {
+      state.pdf?.pages.forEach(page => {
+        const count = state.notes.filter(note => note.type === 'pdf-page' && !note.orphaned && note.pageNumber === page.number).length;
+        page.element.dataset.label = `第 ${page.number} 页${count ? ` · 整页批注 ${count}` : !page.text.trim() ? ' · 无可选文字，可添加整页批注' : ''}`;
+        if (count) page.element.dataset.pageNotes = String(count);
+        else delete page.element.dataset.pageNotes;
+      });
+    }
+
+    window.addEventListener('resize', () => { if (state.format === 'PDF') state.pdf?.resize(state.docZoom); });
+
     window.loadDocument = function(title, text, notes, format, html, progress, edited, token) {
+      closePdfDocument();
       cancelProgressRestore();
       resetAiReadingSession();
       state.title = String(title || '未命名文件');
@@ -2213,6 +2385,7 @@
 
     window.beginTextDocument = function(title, notes, progress, token, totalLength) {
       if (state.loading && state.documentToken === String(token || '')) return;
+      closePdfDocument();
       cancelProgressRestore();
       resetAiReadingSession();
       state.title = String(title || '未命名文件'); state.text = ''; state.html = '';
@@ -2235,6 +2408,7 @@
       }
       cancelProgressRestore();
       flushReadingProgress();
+      closePdfDocument();
       toggleSearch(false);
       closeAiPage();
       resetAiReadingSession();
@@ -2274,7 +2448,7 @@
     };
 
     function normalizeNotes(notes) {
-      return ReaderNotes.normalize(notes, state.text);
+      return ReaderNotes.normalize(notes, state.text, state.format === 'PDF' ? state.pdf?.pages.length || 0 : 0);
     }
 
     function isAsciiWordChar(value) {
@@ -2313,7 +2487,7 @@
     }
 
     function annotationRanges(note) {
-      if (!note || note.orphaned) return [];
+      if (!note || note.orphaned || note.type === 'pdf-page') return [];
       if (note.global) {
         const matches = exactTextRanges(note.quote);
         if (matches.length) return matches;
@@ -2331,7 +2505,7 @@
 
     function annotationCount(notes = state.notes) {
       return (Array.isArray(notes) ? notes : [])
-        .reduce((count, note) => count + (note.orphaned ? 1 : annotationRanges(note).length), 0);
+        .reduce((count, note) => count + (note.orphaned || note.type === 'pdf-page' ? 1 : annotationRanges(note).length), 0);
     }
 
     function rangesOverlap(left, right) {
@@ -2402,6 +2576,14 @@
     }
 
     function renderDocument() {
+      if (state.format === 'PDF') {
+        doc.querySelectorAll('mark.annotation, .search-hit').forEach(mark => mark.replaceWith(...mark.childNodes));
+        doc.normalize();
+        state.notes.forEach(wrapAnnotation);
+        updatePdfPageLabels();
+        updateNoteCount();
+        return;
+      }
       doc.classList.remove('empty');
       doc.replaceChildren();
       doc.classList.toggle('docx', state.format === 'DOCX');
@@ -2460,10 +2642,10 @@
     }
 
     function persistReadingProgress(immediate = false) {
-      if (!state.title || state.restoringProgress) return;
+      if (!state.title || state.loading || state.restoringProgress) return;
       const save = () => {
         progressTimer = 0;
-        if (state.title && !state.restoringProgress) {
+        if (state.title && !state.loading && !state.restoringProgress) {
           state.readingProgress = readingProgressRatio();
           bridge('saveReadingProgress', String(state.readingProgress));
         }
@@ -2531,7 +2713,7 @@
     }
 
     document.addEventListener('selectionchange', () => {
-      if (state.editing) {
+      if (state.editing || state.loading) {
         state.selection = null;
         document.getElementById('selectionBar').hidden = true;
         return;
@@ -2630,6 +2812,14 @@
     function saveNote() {
       const noteText = document.getElementById('noteText').value.trim();
       if (!noteText) return showToast('请输入批注内容');
+      if (state.draftSelection?.type === 'pdf-page') {
+        state.notes.push({ ...state.draftSelection, id: newId('note'), note: noteText,
+          global: false, orphaned: false, createdAt: Date.now() });
+        if (!persistNotes()) return;
+        state.draftSelection = null;
+        closeSheet('noteEditor'); renderDocument(); showToast('整页批注已保存');
+        return;
+      }
       if (state.editingId !== null) {
         const note = state.notes.find(item => String(item.id) === String(state.editingId));
         if (!note) return showToast('批注已失效，请重新选择文字');
@@ -2703,7 +2893,7 @@
       document.getElementById('noteText').value = note.note;
       const globalToggle = document.getElementById('globalNote');
       globalToggle.checked = Boolean(note.global);
-      globalToggle.disabled = Boolean(note.orphaned);
+      globalToggle.disabled = Boolean(note.orphaned) || note.type === 'pdf-page';
       document.getElementById('deleteNoteButton').hidden = false;
       closeSheet('notesSheet');
       openSheet('noteEditor');
@@ -2767,6 +2957,14 @@
     }
 
     function startNoteBinding(id) {
+      const note = state.notes.find(item => item.id === id);
+      if (note?.type === 'pdf-page' && state.format === 'PDF' && state.pdf) {
+        note.pageNumber = state.pdf.currentPage();
+        note.quote = `第 ${note.pageNumber} 页（整页批注）`; note.orphaned = false; note.updatedAt = Date.now();
+        if (!persistNotes()) return;
+        closeSheet('notesSheet'); renderDocument(); showToast(`已绑定到第 ${note.pageNumber} 页`);
+        return;
+      }
       state.rebindNoteId = id;
       closeSheet('notesSheet'); closeAiChat(); closeAiPage();
       document.getElementById('noteBinding').hidden = false;
@@ -2785,6 +2983,7 @@
       const ranges = note.global ? exactTextRanges(anchor.quote) : [anchor];
       if (!ranges.length || annotationConflict(ranges, note)) return showToast('新位置与已有批注重叠，请选择其他文字');
       Object.assign(note, anchor, { orphaned: false, updatedAt: Date.now() });
+      delete note.type; delete note.pageNumber;
       if (!persistNotes()) return;
       cancelNoteBinding();
       window.getSelection()?.removeAllRanges(); state.selection = null;
@@ -2811,7 +3010,7 @@
       try {
         const data = ReaderNotes.parseBackup(raw);
         const same = data.document.textHash === state.documentInfo.textHash;
-        const result = ReaderNotes.merge(state.notes, data.notes, state.text, same);
+        const result = ReaderNotes.merge(state.notes, data.notes, state.text, same, state.pdf?.pages.length || 0);
         const hint = same ? '文档内容一致。' : '文档内容不一致，新增笔记将保留为待定位。';
         if (!confirm(`从「${data.document.title}」恢复笔记？\n${hint}\n新增 ${result.added} 条，跳过重复 ${result.skipped} 条，冲突副本 ${result.conflicts} 条。现有批注不会被覆盖。`)) return;
         if (token !== state.documentToken) return;
@@ -2828,16 +3027,18 @@
 
     function updateNoteCount() {
       const detached = state.notes.filter(note => note.orphaned).length;
-      document.getElementById('notesButton').textContent = `批注 ${annotationCount()}${detached ? ` · 待定位 ${detached}` : ''}`;
+      const embedded = state.format === 'PDF' ? state.pdf?.embeddedNotes.length || 0 : 0;
+      document.getElementById('notesButton').textContent = `批注 ${annotationCount() + embedded}${detached ? ` · 待定位 ${detached}` : ''}`;
     }
 
-    function showNotes() {
+    function showNotes(focusNote = null) {
       if (!state.title || state.loading) return;
       const list = document.getElementById('notesList');
       list.replaceChildren();
-      if (!state.notes.length) {
+      const embeddedNotes = state.format === 'PDF' ? state.pdf?.embeddedNotes || [] : [];
+      if (!state.notes.length && !embeddedNotes.length) {
         const empty = document.createElement('p');
-        empty.textContent = '还没有批注。选中文字后点击“添加批注”。';
+        empty.textContent = state.format === 'PDF' ? '长按文字添加高亮批注，也可点击顶部“整页批注”。批注保存在本机，可单独导出或备份。' : '还没有批注。选中文字后点击“添加批注”。';
         empty.style.color = 'var(--muted)';
         list.append(empty);
       }
@@ -2847,23 +3048,38 @@
         const quote = document.createElement('blockquote');
         const places = annotationRanges(note).length;
         quote.textContent = `“${annotationQuote(note) || '原引用未保存'}”`
+          + (state.format === 'PDF' && !note.orphaned && note.type !== 'pdf-page' ? ` · 第 ${state.pdf.pageForOffset(note.start)} 页` : '')
           + (note.orphaned ? '（待定位）' : note.global ? `（全局 · ${places} 处）` : '');
         const text = document.createElement('p');
         text.textContent = note.note;
         const row = document.createElement('div');
         row.className = 'row';
-        [[note.orphaned ? '重新定位' : '跳转', () => note.orphaned ? startNoteBinding(note.id) : jumpToNote(note.id)], ['编辑', () => editNote(note.id)], ['删除', () => removeNote(note.id)]].forEach(([label, action]) => {
+        [[note.orphaned ? note.type === 'pdf-page' && state.format === 'PDF' ? '绑定当前页' : '重新定位' : '跳转', () => note.orphaned ? startNoteBinding(note.id) : jumpToNote(note.id)], ['编辑', () => editNote(note.id)], ['删除', () => removeNote(note.id)]].forEach(([label, action]) => {
           const button = document.createElement('button');
           button.type = 'button'; button.textContent = label; button.onclick = action; row.append(button);
         });
         item.append(quote, text, row); list.append(item);
       });
+      let focusedItem;
+      embeddedNotes.forEach(note => {
+        const item = document.createElement('article'); item.className = 'note-item';
+        if (note === focusNote) { item.classList.add('pdf-note-selected'); focusedItem = item; }
+        const quote = document.createElement('blockquote'); quote.textContent = `第 ${note.pageNumber} 页 · PDF 内批注（只读）`;
+        const text = document.createElement('p'); text.textContent = note.contents;
+        const button = document.createElement('button'); button.type = 'button'; button.textContent = '跳转';
+        button.onclick = () => { closeSheet('notesSheet'); jumpToChapter(note.pageNumber - 1); };
+        item.append(quote, text, button); list.append(item);
+      });
       openSheet('notesSheet');
+      if (focusedItem) requestAnimationFrame(() => focusedItem.scrollIntoView({ block: 'nearest' }));
     }
 
     function jumpToNote(id) {
       closeSheet('notesSheet');
+      cancelProgressRestore();
       renderDocument();
+      const note = state.notes.find(item => item.id === id);
+      if (note?.type === 'pdf-page') return state.pdf?.pages[note.pageNumber - 1]?.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       const mark = doc.querySelector(`mark[data-id="${CSS.escape(id)}"]`);
       mark?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -3038,12 +3254,44 @@
       return serializeDocxBlocks(template.content, []);
     }
 
-    function exportDocument() {
-      if (!state.text || state.editing) return;
+    async function exportDocument() {
+      if (!state.title || state.loading || state.editing) return;
+      if (state.format === 'PDF') return exportAnnotatedPdf();
       if (state.format === 'DOCX' && state.edited && state.html) {
         bridge('exportDocument', JSON.stringify(docxExportBlocks()));
       } else {
         bridge('exportDocument', '');
+      }
+    }
+
+    async function exportAnnotatedPdf() {
+      const pdf = state.pdf, token = state.documentToken;
+      if (!pdf || state.pdfExporting) return;
+      const button = document.getElementById('exportButton');
+      state.pdfExporting = true; button.disabled = true; button.textContent = '正在生成副本…';
+      try {
+        const annotations = pdf.annotationSpecs(structuredNotes(), annotationRanges);
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const bytes = await ReaderPdfExport.write(await pdf.pdf.getData(), annotations);
+        if (state.pdf !== pdf || state.documentToken !== token) throw new Error('文档已切换，导出已取消');
+        if (!bridge('beginPdfExport', token, bytes.length)) throw new Error('PDF 副本超过 40 MB 或文档已切换');
+        for (let start = 0; start < bytes.length; start += 64 * 1024) {
+          if (state.pdf !== pdf) throw new Error('文档已切换，导出已取消');
+          const chunk = bytes.subarray(start, Math.min(bytes.length, start + 64 * 1024));
+          let binary = '';
+          for (let offset = 0; offset < chunk.length; offset += 8192) binary += String.fromCharCode(...chunk.subarray(offset, offset + 8192));
+          if (!bridge('appendPdfExport', token, btoa(binary))) throw new Error('PDF 副本传输失败，请重试');
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+        if (!bridge('finishPdfExport', token)) throw new Error('PDF 副本未生成完整，请重试');
+      } catch (error) {
+        bridge('cancelPdfExport', token);
+        showToast(error.message || '带批注 PDF 导出失败');
+      } finally {
+        state.pdfExporting = false;
+        if (state.pdf === pdf && state.documentToken === token) {
+          button.disabled = false; button.textContent = '导出含批注 PDF';
+        }
       }
     }
 
@@ -3113,7 +3361,7 @@
       const size = Math.max(15, Math.min(30, Number(document.getElementById('fontSize').value) || 19));
       const line = Math.max(1.35, Math.min(2.4, Number(document.getElementById('lineHeight').value) || 1.85));
       const spacing = Math.max(0, Math.min(2, Number(document.getElementById('paragraphSpacing').value) || 0));
-      const ratio = state.title && !state.loading && !state.restoringProgress ? readingProgressRatio() : null;
+      const ratio = state.format !== 'PDF' && state.title && !state.loading && !state.restoringProgress ? readingProgressRatio() : null;
       document.documentElement.style.setProperty('--font-size', `${size}px`);
       document.documentElement.style.setProperty('--line-height', String(line));
       document.documentElement.style.setProperty('--paragraph-spacing', `${spacing}em`);
