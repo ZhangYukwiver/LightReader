@@ -23,6 +23,7 @@ import android.view.WindowInsetsController;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -34,6 +35,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -65,6 +67,8 @@ public final class MainActivity extends Activity {
     private static final String EDITED_DOCUMENT_DIR = "edited_documents";
     private static final int MAX_EDITED_STATE_BYTES = 16 * 1024 * 1024;
     private static final int MAX_RECENT_FILES = 20;
+    private static final String ASSET_ORIGIN = "https://appassets.androidplatform.net/assets/";
+    private static final String LEGACY_SETTINGS_PAGE = "file:///android_asset/reader-migrate.html";
 
     private WebView webView;
     private boolean pageReady;
@@ -75,15 +79,19 @@ public final class MainActivity extends Activity {
     private volatile String currentSourceHash;
     private volatile String currentHtml;
     private volatile boolean currentDocx;
+    private volatile boolean currentPdf;
     private volatile boolean currentEdited;
     private volatile byte[] currentSourceBytes;
     private volatile String currentDocumentToken;
     private volatile byte[] pendingExport;
     private SecretStore secretStore;
     private AiConversationStore conversationStore;
+    private BookKnowledgeStore bookKnowledgeStore;
     private volatile String pendingNotesToken;
     private volatile boolean destroyed;
     private volatile String pendingExportFormat;
+    private volatile String pendingExportSourceUri;
+    private final PdfExportBuffer pdfExportBuffer = new PdfExportBuffer();
     private final AtomicInteger openGeneration = new AtomicInteger();
     private int htmlTopInsetPx;
     private int htmlBottomInsetPx;
@@ -107,13 +115,14 @@ public final class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         secretStore = new SecretStore(this);
         conversationStore = new AiConversationStore(new File(getFilesDir(), "ai_conversations"));
+        bookKnowledgeStore = new BookKnowledgeStore(new File(getFilesDir(), "book_knowledge"));
         webView = new ReaderWebView(this);
         if (Build.VERSION.SDK_INT >= 30) htmlTopInsetPx = statusBarFallbackPx();
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setAllowContentAccess(false);
-        settings.setAllowFileAccess(true);
+        settings.setAllowFileAccess(false);
         settings.setAllowFileAccessFromFileURLs(false);
         settings.setAllowUniversalAccessFromFileURLs(false);
         // DOCX pinch gestures are scoped to the document by reader.html; native WebView
@@ -125,6 +134,24 @@ public final class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
+                if (LEGACY_SETTINGS_PAGE.equals(url)) {
+                    view.evaluateJavascript("JSON.stringify(Object.fromEntries("
+                            + "['reader-font-size','reader-line-height','reader-paragraph-spacing','reader-theme']"
+                            + ".map(k => [k, localStorage.getItem(k)]).filter(e => e[1] !== null)))", raw -> {
+                        if (destroyed) return;
+                        try {
+                            String legacy = new JSONArray("[" + raw + "]").getString(0);
+                            new JSONObject(legacy);
+                            getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                                    .putString("legacy_reader_settings", legacy)
+                                    .putBoolean("reader_https_origin", true).apply();
+                        } catch (Exception ignored) { }
+                        view.getSettings().setAllowFileAccess(false);
+                        view.loadUrl(ASSET_ORIGIN + "reader.html");
+                    });
+                    return;
+                }
+                if (!(ASSET_ORIGIN + "reader.html").equals(url)) return;
                 pageReady = true;
                 applyHtmlInsets();
                 showCurrentDocument();
@@ -133,7 +160,30 @@ public final class MainActivity extends Activity {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return !request.getUrl().toString().startsWith("file:///android_asset/");
+                return true;
+            }
+
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                // A local HTTPS origin supports PDF modules, workers and fonts without
+                // granting file URLs cross-origin access or downloading document resources.
+                String url = request.getUrl().toString();
+                if (LEGACY_SETTINGS_PAGE.equals(url)) return null;
+                if (url.startsWith(ASSET_ORIGIN)) {
+                    String path = request.getUrl().getPath().substring("/assets/".length());
+                    if (!path.contains("..") && !path.contains("\\")) {
+                        try {
+                            String mime = path.endsWith(".html") ? "text/html"
+                                    : path.endsWith(".js") || path.endsWith(".mjs") ? "text/javascript"
+                                    : path.endsWith(".css") ? "text/css"
+                                    : path.endsWith(".wasm") ? "application/wasm"
+                                    : "application/octet-stream";
+                            return new WebResourceResponse(mime, null, getAssets().open(path));
+                        } catch (IOException ignored) { }
+                    }
+                }
+                return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found",
+                        java.util.Collections.emptyMap(), new ByteArrayInputStream(new byte[0]));
             }
         });
         webView.setOnApplyWindowInsetsListener((view, windowInsets) -> {
@@ -167,7 +217,12 @@ public final class MainActivity extends Activity {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     OnBackInvokedDispatcher.PRIORITY_DEFAULT, backCallback);
         }
-        webView.loadUrl("file:///android_asset/reader.html");
+        if (!getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("reader_https_origin", false)) {
+            settings.setAllowFileAccess(true);
+            webView.loadUrl(LEGACY_SETTINGS_PAGE);
+        } else {
+            webView.loadUrl(ASSET_ORIGIN + "reader.html");
+        }
         if (savedInstanceState != null) {
             String uri = savedInstanceState.getString("currentUri");
             if (uri != null) {
@@ -221,7 +276,7 @@ public final class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != RESULT_OK || data == null || data.getData() == null) {
-            if (requestCode == CREATE_EXPORT) { pendingExport = null; pendingExportFormat = null; }
+            if (requestCode == CREATE_EXPORT) { pendingExport = null; pendingExportFormat = null; pendingExportSourceUri = null; }
             if (requestCode == IMPORT_NOTES) pendingNotesToken = null;
             return;
         }
@@ -240,9 +295,11 @@ public final class MainActivity extends Activity {
         } else if (requestCode == CREATE_EXPORT && pendingExport != null) {
             byte[] bytes = pendingExport;
             String format = pendingExportFormat;
+            String sourceUri = pendingExportSourceUri;
             pendingExport = null;
             pendingExportFormat = null;
-            new Thread(() -> writeExport(uri, bytes, format), "write-export").start();
+            pendingExportSourceUri = null;
+            new Thread(() -> writeExport(uri, bytes, format, sourceUri), "write-export").start();
         } else if (requestCode == IMPORT_NOTES) {
             final String token = pendingNotesToken;
             pendingNotesToken = null;
@@ -266,6 +323,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         destroyed = true;
+        pdfExportBuffer.clear();
         openGeneration.incrementAndGet();
         if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
             getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
@@ -290,8 +348,9 @@ public final class MainActivity extends Activity {
         try {
             String title = displayName(uri);
             boolean docx = isDocx(uri, title);
-            if (!docx && !isText(uri, title)) {
-                throw new IOException("第一版支持 TXT 和 DOCX 文件");
+            boolean pdf = isPdf(uri, title);
+            if (!docx && !pdf && !isText(uri, title)) {
+                throw new IOException("支持 TXT、DOCX 和 PDF 文件");
             }
             byte[] sourceBytes = readLimited(uri);
             String html = null;
@@ -301,18 +360,20 @@ public final class MainActivity extends Activity {
                 text = content.text;
                 html = content.html;
                 if (html.length() > MAX_HTML_CHARS) html = null;
+            } else if (pdf) {
+                text = ""; // PDF.js extracts selectable text while preserving page layout.
             } else {
                 text = decode(sourceBytes);
             }
             text = text.replace("\r\n", "\n").replace('\r', '\n');
             // Only reuse a draft for the exact source package that produced it.
-            String sourceHash = docx ? sha256(sourceBytes) : null;
+            String sourceHash = docx || pdf ? sha256(sourceBytes) : null;
             EditedDocument edited = docx ? loadEditedDocument(uri.toString(), sourceHash) : null;
             if (edited != null) {
                 text = edited.text;
                 html = edited.html;
             }
-            String textHash = sha256(text);
+            String textHash = pdf ? sourceHash : sha256(text);
             if (destroyed || generation != openGeneration.get()) return;
             currentUri = uri.toString();
             currentTitle = title == null || title.trim().isEmpty() ? "未命名.txt" : title;
@@ -321,9 +382,11 @@ public final class MainActivity extends Activity {
             currentSourceHash = sourceHash;
             currentHtml = html;
             currentDocx = docx;
+            currentPdf = pdf;
             currentEdited = edited != null;
             currentSourceBytes = sourceBytes;
             currentDocumentToken = UUID.randomUUID().toString();
+            pdfExportBuffer.clear();
             try {
                 rememberRecentFile(currentUri, currentTitle, currentDocx, savedNoteCount(currentUri));
             } catch (Exception ignored) {
@@ -350,6 +413,11 @@ public final class MainActivity extends Activity {
                 || (title != null && title.toLowerCase(java.util.Locale.ROOT).matches(".*\\.(txt|text|log|md|csv)$"));
     }
 
+    private boolean isPdf(Uri uri, String title) {
+        return (title != null && title.toLowerCase(java.util.Locale.ROOT).endsWith(".pdf"))
+                || "application/pdf".equals(getContentResolver().getType(uri));
+    }
+
     private DocxRenderer.Content readDocx(byte[] sourceBytes) throws Exception {
         return DocxRenderer.render(sourceBytes);
     }
@@ -357,7 +425,7 @@ public final class MainActivity extends Activity {
     private byte[] readLimited(Uri uri) throws IOException {
         try (InputStream input = getContentResolver().openInputStream(uri)) {
             if (input == null) throw new IOException("无法读取文件");
-            return readLimited(input, MAX_TEXT_BYTES, "第一版最多打开 20 MB 的文本文件");
+            return readLimited(input, MAX_TEXT_BYTES, "单个文件不能超过 20 MB");
         }
     }
 
@@ -421,7 +489,11 @@ public final class MainActivity extends Activity {
         String notes = loadNotes();
         String progress = loadReadingProgress();
         String script;
-        if (docx) {
+        if (currentPdf) {
+            script = "window.beginPdfDocument(" + JSONObject.quote(title) + ","
+                    + notes + "," + JSONObject.quote(progress) + ","
+                    + JSONObject.quote(token) + "," + currentSourceBytes.length + ")";
+        } else if (docx) {
             script = "window.loadDocument(" + JSONObject.quote(title) + ","
                     + JSONObject.quote(text) + "," + notes + ","
                     + JSONObject.quote("DOCX") + ","
@@ -447,11 +519,14 @@ public final class MainActivity extends Activity {
         currentSourceHash = null;
         currentHtml = null;
         currentDocx = false;
+        currentPdf = false;
         currentEdited = false;
         currentSourceBytes = null;
         currentDocumentToken = null;
         pendingExport = null;
         pendingExportFormat = null;
+        pendingExportSourceUri = null;
+        pdfExportBuffer.clear();
         pendingNotesToken = null;
     }
 
@@ -515,7 +590,7 @@ public final class MainActivity extends Activity {
         updated.put(new JSONObject()
                 .put("uri", uri)
                 .put("name", name)
-                .put("format", docx ? "DOCX" : "TXT")
+                .put("format", currentPdf ? "PDF" : docx ? "DOCX" : "TXT")
                 .put("noteCount", noteCount)
                 .put("modified", currentEdited || noteCount > 0)
                 .put("pinned", pinned)
@@ -579,7 +654,9 @@ public final class MainActivity extends Activity {
             result.put(new JSONObject()
                     .put("uri", uri)
                     .put("name", item.optString("name", "未命名文件"))
-                    .put("format", "DOCX".equals(item.optString("format")) ? "DOCX" : "TXT")
+                    .put("format", "PDF".equals(item.optString("format"))
+                            || item.optString("name", "").toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")
+                            ? "PDF" : "DOCX".equals(item.optString("format")) ? "DOCX" : "TXT")
                     .put("noteCount", notes)
                     .put("modified", item.optBoolean("modified", false) || notes > 0)
                     .put("pinned", item.optBoolean("pinned", false))
@@ -804,10 +881,11 @@ public final class MainActivity extends Activity {
             } else {
                 pendingExport = currentText.getBytes(StandardCharsets.UTF_8);
             }
-            pendingExportFormat = currentDocx ? "DOCX" : "TXT";
+            pendingExportFormat = currentPdf ? "PDF" : currentDocx ? "DOCX" : "TXT";
+            pendingExportSourceUri = currentUri;
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
                     .addCategory(Intent.CATEGORY_OPENABLE)
-                    .setType(currentDocx
+                    .setType(currentPdf ? "application/pdf" : currentDocx
                             ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                             : "text/plain")
                     .putExtra(Intent.EXTRA_TITLE, exportName());
@@ -819,7 +897,7 @@ public final class MainActivity extends Activity {
 
     private String exportName() {
         String title = currentTitle == null || currentTitle.trim().isEmpty() ? "文档" : currentTitle;
-        return title.lastIndexOf('.') > 0 ? title : title + (currentDocx ? ".docx" : ".txt");
+        return title.lastIndexOf('.') > 0 ? title : title + (currentPdf ? ".pdf" : currentDocx ? ".docx" : ".txt");
     }
 
     private void saveEditedDocument(String json) throws Exception {
@@ -852,7 +930,11 @@ public final class MainActivity extends Activity {
                 .toString());
     }
 
-    private void writeExport(Uri uri, byte[] bytes, String format) {
+    private void writeExport(Uri uri, byte[] bytes, String format, String sourceUri) {
+        if (sourceUri != null && sourceUri.equals(uri.toString())) {
+            toast("为保留原文件，请另存为一个新文件");
+            return;
+        }
         try (OutputStream output = getContentResolver().openOutputStream(uri, "w")) {
             if (output == null) throw new IOException("无法创建导出文件");
             output.write(bytes);
@@ -1069,6 +1151,11 @@ public final class MainActivity extends Activity {
 
     public final class ReaderBridge {
         @JavascriptInterface
+        public String getLegacyReaderSettings() {
+            return getSharedPreferences(PREFS, MODE_PRIVATE).getString("legacy_reader_settings", "{}");
+        }
+
+        @JavascriptInterface
         public void openTextFile() {
             runOnUiThread(() -> {
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT)
@@ -1076,6 +1163,7 @@ public final class MainActivity extends Activity {
                         .setType("*/*")
                         .putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
                                 "text/plain",
+                                "application/pdf",
                                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"})
                         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
                                 | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
@@ -1107,6 +1195,57 @@ public final class MainActivity extends Activity {
             }
             if (end == start) end = Math.min(text.length(), start + 1);
             return text.substring(start, end);
+        }
+
+        @JavascriptInterface
+        public String getPdfChunk(String token, int start, int length) {
+            byte[] bytes = currentSourceBytes;
+            if (!currentPdf || bytes == null || token == null || !token.equals(currentDocumentToken)
+                    || start < 0 || start >= bytes.length || length <= 0) return "";
+            int count = Math.min(Math.min(length, 64 * 1024), bytes.length - start);
+            return android.util.Base64.encodeToString(bytes, start, count, android.util.Base64.NO_WRAP);
+        }
+
+        @JavascriptInterface
+        public boolean beginPdfExport(String token, int byteCount) {
+            return currentPdf && token != null && token.equals(currentDocumentToken)
+                    && pdfExportBuffer.begin(token, byteCount);
+        }
+
+        @JavascriptInterface
+        public boolean appendPdfExport(String token, String base64) {
+            if (!currentPdf || token == null || !token.equals(currentDocumentToken)) return false;
+            try {
+                if (base64 == null || base64.length() > 90_000) throw new IOException("PDF 数据块过大");
+                return pdfExportBuffer.append(token, android.util.Base64.decode(base64, android.util.Base64.DEFAULT));
+            } catch (Exception error) {
+                pdfExportBuffer.cancel(token);
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public boolean finishPdfExport(String token) {
+            if (!currentPdf || token == null || !token.equals(currentDocumentToken)) return false;
+            byte[] bytes = pdfExportBuffer.finish(token);
+            if (bytes == null) return false;
+            String sourceUri = currentUri;
+            String name = currentTitle.replaceFirst("(?i)\\.pdf$", "") + "-含批注.pdf";
+            runOnUiThread(() -> {
+                if (destroyed || !token.equals(currentDocumentToken)) return;
+                pendingExport = bytes;
+                pendingExportFormat = "含批注 PDF，批注正文在文末";
+                pendingExportSourceUri = sourceUri;
+                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                        .setType("application/pdf").putExtra(Intent.EXTRA_TITLE, name);
+                startActivityForResult(intent, CREATE_EXPORT);
+            });
+            return true;
+        }
+
+        @JavascriptInterface
+        public void cancelPdfExport(String token) {
+            pdfExportBuffer.cancel(token);
         }
 
         @JavascriptInterface
@@ -1159,7 +1298,7 @@ public final class MainActivity extends Activity {
                 if (token == null || !token.equals(currentDocumentToken)) throw new IOException("文档已切换");
                 String uri = currentUri;
                 JSONObject data = new JSONObject().put("document", new JSONObject()
-                        .put("title", currentTitle).put("format", currentDocx ? "DOCX" : "TXT")
+                        .put("title", currentTitle).put("format", currentPdf ? "PDF" : currentDocx ? "DOCX" : "TXT")
                         .put("textHash", currentTextHash));
                 try {
                     data.put("conversation", conversationStore.load(uri));
@@ -1189,6 +1328,31 @@ public final class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public String getBookKnowledge(String token) {
+            try {
+                if (token == null || !token.equals(currentDocumentToken)) throw new IOException("文档已切换");
+                JSONObject data = bookKnowledgeStore.load(currentUri);
+                if (!token.equals(currentDocumentToken)) throw new IOException("文档已切换");
+                return new JSONObject().put("ok", true).put("data", data == null ? JSONObject.NULL : data).toString();
+            } catch (Exception error) {
+                return "{\"ok\":false,\"error\":\"无法读取本地知识库，可点击重建\"}";
+            }
+        }
+
+        @JavascriptInterface
+        public boolean saveBookKnowledge(String token, String json) {
+            try {
+                if (token == null || !token.equals(currentDocumentToken)) throw new IOException("文档已切换");
+                String uri = currentUri, hash = currentTextHash;
+                bookKnowledgeStore.save(uri, hash, json);
+                return token.equals(currentDocumentToken);
+            } catch (Exception error) {
+                toast(error.getMessage() == null ? "知识库保存失败" : error.getMessage());
+                return false;
+            }
+        }
+
+        @JavascriptInterface
         public void importNotes(String token) {
             runOnUiThread(() -> {
                 if (token == null || !token.equals(currentDocumentToken)) return;
@@ -1211,6 +1375,7 @@ public final class MainActivity extends Activity {
                     if (!token.equals(currentDocumentToken)) return;
                     pendingExport = bytes;
                     pendingExportFormat = "json".equals(format) ? "笔记备份" : "Markdown 笔记";
+                    pendingExportSourceUri = currentUri;
                     Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
                             .setType("json".equals(format) ? "application/json" : "text/markdown")
                             .putExtra(Intent.EXTRA_TITLE, name);

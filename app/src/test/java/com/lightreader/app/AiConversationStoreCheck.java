@@ -33,6 +33,23 @@ public final class AiConversationStoreCheck {
             check(restored.getJSONArray("pageMessages").getJSONObject(0).getString("text").equals("独立对话"),
                     "Page conversation did not survive restart");
             check(restored.getJSONObject("anchor").getString("quote").equals("原引用"), "Quote was lost");
+            JSONObject bookConversation = conversation("other-request");
+            bookConversation.put("bookAnalysis", new JSONObject().put("version", 1).put("summaries", new JSONArray())
+                    .put("pending", new JSONObject().put("id", "book-request").put("kind", "read").put("pending", true)));
+            store.save("book", bookConversation);
+            store.begin("book", "book-request");
+            check(store.load("book").getJSONObject("bookAnalysis").getJSONObject("pending").getBoolean("pending"),
+                    "Active book request lost on reopen");
+            store.finish("book", "book-request", new JSONObject().put("ok", true).put("text", "片段分析"));
+            store.save("book", bookConversation);
+            JSONObject bookResult = new AiConversationStore(folder.toFile()).load("book")
+                    .getJSONObject("bookAnalysis").getJSONObject("pending");
+            check("片段分析".equals(bookResult.getString("text")) && !bookResult.getBoolean("pending"),
+                    "Late book result overwritten by stale UI save");
+            bookConversation.getJSONObject("bookAnalysis").put("pending", new JSONObject().put("id", "interrupted-book").put("pending", true));
+            store.save("book", bookConversation);
+            check(new AiConversationStore(folder.toFile()).load("book").getJSONObject("bookAnalysis")
+                    .getJSONObject("pending").getBoolean("error"), "Interrupted book request cannot retry");
             try (var files = Files.list(folder)) {
                 Path record = files.filter(path -> path.toString().endsWith(".json")).findFirst().orElseThrow();
                 Files.writeString(record, "invalid json");

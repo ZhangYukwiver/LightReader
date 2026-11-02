@@ -35,6 +35,13 @@ final class AiConversationStore {
                 }
             }
         }
+        JSONObject book = data.optJSONObject("bookAnalysis");
+        JSONObject pending = book == null ? null : book.optJSONObject("pending");
+        if (pending != null && pending.optBoolean("pending")
+                && !active.contains(uri + "\n" + pending.optString("id"))) {
+            pending.put("pending", false).put("error", true).put("text", "上次分析请求已中断，可继续分析。");
+            changed = true;
+        }
         if (changed) write(uri, data);
         return data;
     }
@@ -58,6 +65,19 @@ final class AiConversationStore {
         }
         data.put("anchor", incoming.opt("anchor"));
         data.put("contextId", incoming.optString("contextId"));
+        if (incoming.has("bookAnalysis")) {
+            JSONObject book = incoming.optJSONObject("bookAnalysis");
+            JSONObject savedBook = data.optJSONObject("bookAnalysis");
+            JSONObject pending = book == null ? null : book.optJSONObject("pending");
+            JSONObject savedPending = savedBook == null ? null : savedBook.optJSONObject("pending");
+            // A normal chat save can race a completed book request before its UI callback.
+            if (pending != null && savedPending != null && pending.optBoolean("pending")
+                    && !savedPending.optBoolean("pending")
+                    && pending.optString("id").equals(savedPending.optString("id"))) {
+                book.put("pending", savedPending);
+            }
+            data.put("bookAnalysis", book == null ? JSONObject.NULL : book);
+        }
         write(uri, data);
     }
 
@@ -84,6 +104,9 @@ final class AiConversationStore {
     }
 
     private JSONObject findMessage(JSONObject data, String id) throws Exception {
+        JSONObject book = data.optJSONObject("bookAnalysis");
+        JSONObject pending = book == null ? null : book.optJSONObject("pending");
+        if (pending != null && id.equals(pending.optString("id"))) return pending;
         for (String key : new String[]{"messages", "pageMessages"}) {
             JSONArray messages = data.getJSONArray(key);
             int at = find(messages, id);
